@@ -20,27 +20,40 @@ else:
 # Read the file and count frequencies of characters
 running_total = 0
 
-# Loop through every character of the file
+
+# Store the file contents
+# file_contents = []
+
+# Read the file
 with open(filename) as f:
-    while True:
-        # Read a single character
-        c = f.read(1)
+    file_contents = f.read()
+# print(file_contents)
 
-        if not c:
-            # If we've reached the end of the file
-            break
+# # Loop through every character of the file
+# with open(filename) as f:
+#     while True:
+#         # Read a single character
+#         c = f.read(1)
+#
+#         if not c:
+#             # If we've reached the end of the file
+#             break
+#
+#         else:
+#             if c not in freqs:
+#                 # Set the first occurrence of c to frequency 1
+#                 freqs[c] = 1
+#
+#             else:
+#                 # Increment the number of occurrences of c by 1
+#                 freqs[c] += 1
+#
+#         # Keep a track of how many characters were in the file
+#         running_total += 1
 
-        else:
-            if c not in freqs:
-                # Set the first occurrence of c to frequency 1
-                freqs[c] = 1
-
-            else:
-                # Increment the number of occurrences of c by 1
-                freqs[c] += 1
-
-        # Keep a track of how many characters were in the file
-        running_total += 1
+# Loop through every character of file_contents
+for i in range(len(file_contents)):
+    freqs[file_contents[i]] += 1
 
 # End time
 t1 = time()
