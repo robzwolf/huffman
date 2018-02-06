@@ -1,4 +1,4 @@
-class Tree:
+class Node:
     def __init__(self, cargo, left=None, right=None):
         self.cargo = cargo
         self.left  = left
