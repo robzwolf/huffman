@@ -40,3 +40,13 @@ t1 = time()
 print(freqs)
 print("Process took " + str(round(t1-t0,5)) + " seconds")
 
+
+
+def get_smallest_two(freqs):
+    """
+    Gets the smallest two elements from a dictionary.
+    :param freqs:
+    :return: Tuple of smallest, second smallest
+    """
+    # smallest =
+    pass
