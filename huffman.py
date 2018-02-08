@@ -27,7 +27,7 @@ class HeapElement:
         """
         Make a new HeapElement (i.e. an element in the heap, not to be confused with an element in a tree)
         :param frequency: frequency associated with the element
-        :param tree: tree associated with the element
+        :param tree: tree associated with the element, could be a Branch or Leaf
         """
         self.frequency = frequency
         self.tree = tree
@@ -40,13 +40,16 @@ class HeapElement:
 
 
 class Tree:
+    """
+    A tree can be a branch or a leaf.
+    """
     pass
 
 
 class Leaf(Tree):
     def __init__(self, byte):
         """
-        Declare a new leaf. A leaf contains a unique byte.
+        Declare a new leaf. A leaf's cargo is a unique byte.
         :param byte: The byte
         """
         self.byte = byte
@@ -57,6 +60,11 @@ class Leaf(Tree):
 
 class Branch(Tree):
     def __init__(self, left, right):
+        """
+        Declare a new branch. A branch has a child left and a child right tree.
+        :param left:
+        :param right:
+        """
         self.left = left
         self.right = right
 
@@ -104,17 +112,22 @@ def encode(filename):
     while len(heap) > 1:
         smallest = heap.pop()
         second_smallest = heap.pop()
-        heap.push(HeapElement(smallest.frequency + second_smallest.frequency, Branch(smallest.tree,
-                                                                                     second_smallest.tree)))
+        heap.push(
+            HeapElement(
+                smallest.frequency + second_smallest.frequency,
+                Branch(smallest.tree, second_smallest.tree)
+            )
+        )
         print("LATEST HEAP IS:", heap)
         print("Length of heap is now:", len(heap))
-
-    # print(heap)
 
     # End time
     t1 = time()
 
     print("Process took " + str(round(t1 - t0, 5)) + " seconds")
+
+    # Do a depth first search and assign a string to each byte
+
 
 
 def decode(filename):
