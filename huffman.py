@@ -1,52 +1,84 @@
 from collections import defaultdict
 from time import time
 import sys
+import heapq
+
+
+# import argparse
 
 
 class Node:
-    def __init__(self, cargo, left=None, right=None):
-        self.cargo = cargo
-        self.left = left
-        self.right = right
+    def __init__(self, frequency, tree):
+        self.frequency = frequency
+        self.tree = tree
 
-    def __str__(self):
-        return str(self.cargo)
+    def __repr__(self):
+        return """Node (
+            {}
+            {}
+        )""".format(self.frequency, self.tree)
 
 
-# Start time
-t0 = time()
+# class Heap:
+#     pass
 
-# Initialise the frequencies dictionary
-freqs = defaultdict(int)
 
-# Get the filename to read from the arguments
-if len(sys.argv) < 2:
-    print("No filename was specified.")
+def encode(filename):
+    """
+    Encodes a file using Huffman coding.
+    :param filename: The file to encode.
+    :return:
+    """
+
+    # Start time
+    t0 = time()
+
+    # Initialise the frequencies list, where the i-th element represents
+    # the occurrences of the byte represented by i
+    freqs = [0] * 256
+
+    # Read the file byte by byte
+    with open(filename, "rb") as f:
+        file_contents = f.read()
+
+    # Loop through every byte of file_contents and count the frequency
+    for i in range(len(file_contents)):
+        freqs[file_contents[i]] += 1
+
+    # End time
+    t1 = time()
+
+    # Print the frequency of each byte
+    for i in range(len(freqs)):
+        print(bytes([i]), "=", freqs[i])
+
+    print("Process took " + str(round(t1 - t0, 5)) + " seconds")
+
+    # Make a symbols list of the bytes we intend to encode
+    occurring_bytes = (each_byte for each_byte in range(256) if freqs[each_byte] != 0)
+    print(*occurring_bytes)
+
+
+def decode(filename):
+    """
+    Decodes a file that has been encoded using Huffman coding.
+    :param filename: The file to decode
+    :return:
+    """
+    pass
+
+
+# Parse initial arguments and record appropriately
+if len(sys.argv) < 3:
+    print("Missing arguments")
     sys.exit(0)
 else:
-    filename = sys.argv[1]
-
-# Read the file
-with open(filename) as f:
-    file_contents = f.read()
-
-# Loop through every character of file_contents
-for i in range(len(file_contents)):
-    freqs[file_contents[i]] += 1
-
-# End time
-t1 = time()
-
-print(freqs)
-print("Process took " + str(round(t1-t0,5)) + " seconds")
-
-
-
-def get_smallest_two(freqs):
-    """
-    Gets the smallest two elements from a dictionary.
-    :param freqs:
-    :return: Tuple of smallest, second smallest
-    """
-    # smallest =
-    pass
+    mode = sys.argv[1]
+    filename = sys.argv[2]
+    if mode == "-e":
+        encode(filename)
+    elif mode == "-d":
+        decode(filename)
+    else:
+        print("Invalid mode")
+        sys.exit(0)
