@@ -126,60 +126,33 @@ def encode(filename):
         print("LATEST HEAP IS:", heap)
         print("Length of heap is now:", len(heap))
 
+    # Traverse through the tree and work out the label for each byte
+    byte_labels = defaultdict(str)
 
-
-    # def make_codes_helper(self, root, current_code):
-    #     if (root == None):
-    #         return
-    #
-    #     if (root.char != None):
-    #         self.codes[root.char] = current_code
-    #         self.reverse_mapping[current_code] = root.char
-    #         return
-    #
-    #     self.make_codes_helper(root.left, current_code + "0")
-    #     self.make_codes_helper(root.right, current_code + "1")
-    #
-    # def make_codes(self):
-    #     root = heapq.heappop(self.heap)
-    #     current_code = ""
-    #     self.make_codes_helper(root, current_code)
-
-    # For now, let's be simple about it and just have a dictionary
-    byte_strings = defaultdict(str)
-
-    def traverse_and_label(tree, current_string):
+    def traverse_and_label(tree, current_label):
         if isinstance(tree, Branch):
-            print("Current tree is a branch, current_string is", current_string)
-            traverse_and_label(tree.left, current_string + "0")
-            traverse_and_label(tree.right, current_string + "1")
+            print("Current tree is a branch, current_string is", current_label)
+            traverse_and_label(tree.left, current_label + "0")
+            traverse_and_label(tree.right, current_label + "1")
         elif isinstance(tree, Leaf):
-            print("Current tree is a leaf, current_string is", current_string)
-            byte_strings[tree.byte] = current_string
+            print("Current tree is a leaf with byte {}, current_string is".format(tree.byte), current_label)
+            byte_labels[tree.byte] = current_label
 
     traverse_and_label(heap.pop().tree, "")
-    print(byte_strings)
+    print(byte_labels)
 
+    # Convert the input file to one long compressed string of 1s and 0s
+    output = ""
+    for byte in file_contents:
+        print("byte is {} and has label {}".format(byte, byte_labels[byte]))
+        output += byte_labels[byte]
+    print("output is", output)
 
-    # Do a depth first search and assign a string to each byte
+    # Now to write this to file
 
-    # Generate a list of empty strings, where the i-th element is the
-    # encoding string for the i-th element in occurring_bytes
-    # byte_strings = [""] * num_unique_bytes
-
-    #
-    # working_string = ""
-    # top_tree = heap.pop().tree
-    # working_tree = top_tree
-    # read_vertices = []
-    # while True:
-    #     if isinstance(working_tree, Leaf):
-    #         working_string =
-    #
-    #
-    #     break
-    # print("\ntop_tree:", top_tree)
-
+    # Derive new .hc filename
+    output_filename = filename[:filename.rfind(".")] + ".hc"
+    print(output_filename)
 
     # End time
     t1 = time()
