@@ -3,6 +3,8 @@ import sys
 import heapq
 import argparse
 
+from collections import defaultdict
+
 
 class Heap:
     def __init__(self, heap):
@@ -80,6 +82,8 @@ def encode(filename):
     :return:
     """
 
+    print("Encoding:", filename)
+
     # Start time
     t0 = time()
 
@@ -106,7 +110,8 @@ def encode(filename):
     heap = Heap([HeapElement(freqs[byte], Leaf(byte)) for byte in occurring_bytes])
 
     print("Initial heap:", heap)
-    print("Length of heap:", len(heap))
+    num_unique_bytes = len(heap)
+    print("Length of heap:", num_unique_bytes)
 
     # Iterate through the heap until we have a huge frequency tree inside a single HeapElement
     while len(heap) > 1:
@@ -121,13 +126,64 @@ def encode(filename):
         print("LATEST HEAP IS:", heap)
         print("Length of heap is now:", len(heap))
 
-    # End time
-    t1 = time()
 
-    print("Process took " + str(round(t1 - t0, 5)) + " seconds")
+
+    # def make_codes_helper(self, root, current_code):
+    #     if (root == None):
+    #         return
+    #
+    #     if (root.char != None):
+    #         self.codes[root.char] = current_code
+    #         self.reverse_mapping[current_code] = root.char
+    #         return
+    #
+    #     self.make_codes_helper(root.left, current_code + "0")
+    #     self.make_codes_helper(root.right, current_code + "1")
+    #
+    # def make_codes(self):
+    #     root = heapq.heappop(self.heap)
+    #     current_code = ""
+    #     self.make_codes_helper(root, current_code)
+
+    # For now, let's be simple about it and just have a dictionary
+    byte_strings = defaultdict(str)
+
+    def traverse_and_label(tree, current_string):
+        if isinstance(tree, Branch):
+            print("Current tree is a branch, current_string is", current_string)
+            traverse_and_label(tree.left, current_string + "0")
+            traverse_and_label(tree.right, current_string + "1")
+        elif isinstance(tree, Leaf):
+            print("Current tree is a leaf, current_string is", current_string)
+            byte_strings[tree.byte] = current_string
+
+    traverse_and_label(heap.pop().tree, "")
+    print(byte_strings)
+
 
     # Do a depth first search and assign a string to each byte
 
+    # Generate a list of empty strings, where the i-th element is the
+    # encoding string for the i-th element in occurring_bytes
+    # byte_strings = [""] * num_unique_bytes
+
+    #
+    # working_string = ""
+    # top_tree = heap.pop().tree
+    # working_tree = top_tree
+    # read_vertices = []
+    # while True:
+    #     if isinstance(working_tree, Leaf):
+    #         working_string =
+    #
+    #
+    #     break
+    # print("\ntop_tree:", top_tree)
+
+
+    # End time
+    t1 = time()
+    print("Process took " + str(round(t1 - t0, 5)) + " seconds")
 
 
 def decode(filename):
