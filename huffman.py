@@ -85,10 +85,12 @@ class ByteLabel():
         self.byte = byte
         self.label = label
 
-    def label_len(self, bl):
+    @staticmethod
+    def label_len(bl):
         return len(bl.label)
 
-    def get_byte(self, bl):
+    @staticmethod
+    def get_byte(bl):
         return bl.byte
 
     def __repr__(self):
@@ -123,7 +125,6 @@ def encode(filename):
     Encodes a file using Huffman coding.
     :type filename: str
     :param filename: The file to encode.
-    :return:
     """
 
     print("Encoding:", filename)
@@ -137,8 +138,11 @@ def encode(filename):
 
     # Read the file byte by byte
     with open(filename, "rb") as f:
-        file_contents = f.read()
-    # print(type(file_contents))
+        try:
+            file_contents = f.read()
+        except IOError:
+            print("Error reading file:", filename)
+            sys.exit(1)
 
     # Loop through every byte of file_contents and count the frequency
     for i in range(len(file_contents)):
@@ -243,14 +247,18 @@ def encode(filename):
     else:
         # Use Method 2
 
+        # Prepare the byte string that describes the number of unique bytes
         dict_num_bytes = int_to_byte_string(num_unique_bytes)
 
+        # Prepare the codeword lengths byte string
         dict_label_lengths = "".join([int_to_byte_string(len(bin(byte_label.label)[2:]))
                                       for byte_label in byte_labels.byte_labels])
 
+        # Prepare the 'list of occurring bytes' byte string
         dict_occurring_bytes = "".join([int_to_byte_string(byte)
                                         for byte in occurring_bytes])
 
+        # Whack everything into one massive string of bits
         massive_bitstring = "".join([b_number_padding_bits,
                                      dict_num_bytes,
                                      dict_label_lengths,
@@ -271,6 +279,7 @@ def encode(filename):
 
     # End time
     t1 = time()
+
     print("Wrote encoded file to", output_filename)
     print("Process took " + str(round(t1 - t0, 5)) + " seconds")
 
@@ -286,8 +295,8 @@ def decode(filename):
 
 
 # Parse initial arguments and record appropriately
-if len(sys.argv) < 3:
-    print("Missing arguments")
+if len(sys.argv) != 3:
+    print("Invalid argument format. Use -e or -d, followed by a filename.")
     sys.exit(1)
 else:
     mode = sys.argv[1]
