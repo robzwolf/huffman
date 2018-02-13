@@ -120,6 +120,18 @@ class ByteLabels():
         return return_string
 
 
+def int_to_byte_string(number):
+    """
+    Takes any integer, e.g. 30, and converts it to an 8-character bit string, e.g. 00011110.
+    Convert back by using int(byte, 2).
+    :param number: The integer to convert
+    :return: An 8-character string of 1s and 0s
+    """
+    if number > 255:
+        return None
+    return "0" * (8 - len(bin(number)[2:])) + bin(number)[2:]
+
+
 def encode(filename):
     """
     Encodes a file using Huffman coding.
@@ -194,10 +206,12 @@ def encode(filename):
     # Sort the byte labels by label length
     byte_labels.sort_by_label_len()
 
+    print(byte_labels)
+
     # Replace existing codes with new ones, as per canonical Huffman code algorithm
     latest_num = -1
     # Iterate through every occurring byte
-    for i in range(len(occurring_bytes)):
+    for i in range(num_unique_bytes):
         # Retrieve the current byte_label element
         working_byte_label = byte_labels.byte_labels[i]
 
@@ -222,17 +236,6 @@ def encode(filename):
     # Convert the input file to one long compressed bitstring of 1s and 0s
     # using "".join because it's much faster than lots of string concatenation
     encoded_file_contents = "".join([bin(codewords[byte])[2:] for byte in file_contents])
-
-    def int_to_byte_string(number):
-        """
-        Takes any integer, e.g. 30, and converts it to an 8-character bit string, e.g. 00011110.
-        Convert back by using int(byte, 2).
-        :param number: The integer to convert
-        :return: An 8-character string of 1s and 0s
-        """
-        if number > 255:
-            return None
-        return "0" * (8 - len(bin(number)[2:])) + bin(number)[2:]
 
     # Calculate the necessary number of padding bits (we need to write a
     # multiple of 8 bits to file as we can only write bytes to file)
@@ -291,10 +294,83 @@ def decode(filename):
         :param filename: The file to decode
         :return:
         """
-    pass
+
+    # Read the file byte by byte
+    with open(filename, "rb") as f:
+        try:
+            file_contents = f.read()
+        except IOError:
+            print("Error reading file:", filename)
+            sys.exit(1)
+    print(file_contents)
+
+    # First byte is the number of padding zeros
+    number_padding_zeros = int(file_contents[0])
+    print("number_padding_zeros", number_padding_zeros)
+
+    # Second byte is the number of occurring bytes
+    number_unique_bytes = file_contents[1]
+    print("number_unique_bytes", number_unique_bytes)
+
+    # Count the codeword bit lengths for those number_unique_bytes bytes, read the occurring bytes, and
+    # associate them with their lengths in a dictionary
+    label_length_dict = defaultdict(int)
+    for i in range(number_unique_bytes):
+        bit_length = file_contents[i+2]
+        occurring_byte = file_contents[i+number_unique_bytes+2]
+        label_length_dict[occurring_byte] = bit_length
+    print(label_length_dict)
+
+    # Read the remaining bytes
+    byte_encoded_file_contents = file_contents[2+2*number_unique_bytes:]
+    print(byte_encoded_file_contents)
+
+    # Convert the remaining bytes (except the last one) to bits
+    encoded_file_contents = "".join([int_to_byte_string(byte_encoded_file_contents[i])
+                                     for i in range(len(byte_encoded_file_contents)-1)])
+
+    # Append the last byte after we have removed the padding zeros
+    encoded_file_contents += int_to_byte_string(byte_encoded_file_contents[
+                                                    len(byte_encoded_file_contents)-1])[:8-number_padding_zeros]
+    print(encoded_file_contents)
+
+    # Hackily store the length of the byte_label in the label field
+    byte_labels = ByteLabels([ByteLabel(byte, label_length_dict[byte]) for byte in label_length_dict])
+    # print(byte_labels)
+
+    # Replace existing codes with new ones, as per canonical Huffman code algorithm
+    latest_num = -1
+    # Iterate through every occurring byte
+    for i in range(number_unique_bytes):
+        # Retrieve the current byte_label element
+        working_byte_label = byte_labels.byte_labels[i]
+        # print(working_byte_label)
+
+        # Increment the codeword by 1
+        new_codeword = latest_num + 1
+
+        # Append 0 to the codeword until it has the same length as the old codeword
+        while len(bin(new_codeword)[2:]) < working_byte_label.label:
+            new_codeword <<= 1
+
+        # Update our counter for the codeword
+        latest_num = int(bin(new_codeword)[2:], 2)
+
+        # Assign the new codeword to the byte_label
+        working_byte_label.label = new_codeword
+
+    # print(byte_labels)
+
+    # Convert our custom ByteLabels object to a normal dictionary (it's faster)
+    codewords = defaultdict(int)
+    for byte in byte_labels.byte_labels:
+        codewords[byte.byte] = byte.label
+    print(codewords)
+
+    #
 
 
-# Parse initial arguments and record appropriately
+# Parse initial arguments and react appropriately
 if len(sys.argv) != 3:
     print("Invalid argument format. Use -e or -d, followed by a filename.")
     sys.exit(1)
@@ -306,5 +382,5 @@ else:
     elif mode == "-d":
         decode(filename)
     else:
-        print("Invalid mode")
+        print("Invalid mode, should be -e or -d")
         sys.exit(1)
