@@ -85,6 +85,54 @@ class ByteLabel():
         self.byte = byte
         self.label = label
 
+    def label_len(self, bl):
+        return len(bl.label)
+
+    def get_byte(self, bl):
+        return bl.byte
+
+    def __repr__(self):
+        return "ByteLabel(byte={}, label={})".format(self.byte, self.label)
+
+
+class ByteLabels():
+    def __init__(self, byte_labels):
+        self.byte_labels = byte_labels
+
+    # def add(self, byte_label):
+    #     self.byte_labels.append(byte_label)
+
+    def get_by_label(self, label):
+        for bl in self.byte_labels:
+            if bl.label == label:
+                return bl
+        return None
+
+    def get_by_byte(self, byte):
+        for bl in self.byte_labels:
+            if bl.byte == byte:
+                return bl
+        return None
+
+    def set_byte(self, byte, label):
+        for bl in self.byte_labels:
+            if bl.byte == byte:
+                bl.label = label
+                return True
+        return False
+
+    def sort_by_label_len(self):
+        self.byte_labels = sorted(self.byte_labels, key=lambda x: len(x.label))
+
+    def sort_by_byte_alphabetically(self):
+        self.byte_labels = sorted(self.byte_labels, key=lambda x: x.byte)
+
+    def __repr__(self):
+        return_string = ""
+        for bl in self.byte_labels:
+            return_string += "\t{}\n".format(bl)
+        return return_string
+
 
 def encode(filename):
     """
@@ -116,7 +164,7 @@ def encode(filename):
         print(bytes([i]), "=", freqs[i])
 
     # Make a list of the bytes we intend to encode
-    occurring_bytes = (each_byte for each_byte in range(256) if freqs[each_byte] != 0)
+    occurring_bytes = [each_byte for each_byte in range(256) if freqs[each_byte] != 0]
 
     # Define the heap, initially a load of heap elements consisting of only Leaves
     heap = Heap([HeapElement(freqs[byte], Leaf(byte)) for byte in occurring_bytes])
@@ -139,7 +187,8 @@ def encode(filename):
         print("Length of heap is now:", len(heap))
 
     # Traverse through the tree and work out the label for each byte
-    byte_labels = defaultdict(str)
+    byte_labels = ByteLabels([ByteLabel(byte, None) for byte in occurring_bytes])
+    print("byte_labels:", byte_labels)
 
     def traverse_and_label(tree, current_label):
         if isinstance(tree, Branch):
@@ -148,23 +197,36 @@ def encode(filename):
             traverse_and_label(tree.right, current_label + "1")
         elif isinstance(tree, Leaf):
             print("Current tree is a leaf with byte {}, current_string is".format(tree.byte), current_label)
-            byte_labels[tree.byte] = current_label
+            byte_labels.set_byte(tree.byte, current_label)
 
     traverse_and_label(heap.pop().tree, "")
 
     # Print the byte labels
-    print("Byte labels are as follows:")
-    for byte in byte_labels:
-        print(byte, ":", byte_labels[byte])
-    print("Sorted byte labels as as follows:")
-    for byte in sorted(byte_labels.values(), key=len):
-        print(byte, ":", byte_labels[byte])
+    print("Normal byte labels are as follows:")
+    print(byte_labels)
+    # Sort the byte labels by length of codeword (they are already "alphabetically" sorted)
+    print("\nCanonically sorted byte labels are as follows:")
+    byte_labels.sort_by_label_len()
+    print(byte_labels)
+
+    # Replace existing codes with new ones, as per canonical Huffman code algorithm
+    latest_num = -1
+    for i in range(len(occurring_bytes)):
+        working_byte_label = byte_labels.byte_labels[i]
+        print("latest_num is currently", latest_num, "and working_byte_label is currently", working_byte_label)
+        new_codeword = str(bin(latest_num + 1))[2:]
+        while len(new_codeword) < len(working_byte_label.label):
+            new_codeword += "0"
+        latest_num = int(new_codeword, 2)
+        print("Setting {}.label to {}".format(working_byte_label, new_codeword))
+        working_byte_label.label = new_codeword
 
     # Convert the input file to one long compressed string of 1s and 0s
     output = ""
     for byte in file_contents:
-        print("byte is {} and has label {}".format(byte, byte_labels[byte]))
-        output += byte_labels[byte]
+        label = byte_labels.get_by_byte(byte).label
+        print("byte is {} and has label {}".format(byte, label))
+        output += label
     print("output is", output)
 
     # Now to write this to file
