@@ -210,10 +210,6 @@ def encode(filename):
         # Assign the new codeword to the byte_label
         working_byte_label.label = new_codeword
 
-    # Print canonically relabelled codes
-    print("\n Canonically relabelled codewords as as follows:")
-    print(byte_labels)
-
     # Convert our custom ByteLabels object to a normal dictionary (it's faster)
     codewords = defaultdict(int)
     for byte in byte_labels.byte_labels:
@@ -222,7 +218,6 @@ def encode(filename):
     # Convert the input file to one long compressed bitstring of 1s and 0s
     # using "".join because it's much faster than lots of string concatenation
     encoded_file_contents = "".join([bin(codewords[byte])[2:] for byte in file_contents])
-    print("Length of encoded is", len(encoded_file_contents), "bits")
 
     def int_to_byte_string(number):
         """
@@ -239,37 +234,22 @@ def encode(filename):
     # multiple of 8 bits to file as we can only write bytes to file)
     number_padding_bits = 8 - (len(encoded_file_contents) % 8)
     b_number_padding_bits = int_to_byte_string(number_padding_bits)
-    # print("Number of padding bits is", number_padding_bits)
-    # print("Number of padding bits in binary is", b_number_padding_bits)
 
     # Use Method 1 if num_unique_bytes is greater than 128
     # Use Method 2 if num_unique_bytes is less than or equal to 128
-    # print("Number of unique bytes is", num_unique_bytes)
     if num_unique_bytes >= 129:
         # Use Method 1
-        print("Planning to use Method 1")
         massive_bitstring = ""
     else:
         # Use Method 2
-        print("Planning to use Method 2")
 
-        # dict_num_bytes = "0" * (8 - len(bin(num_unique_bytes)[2:])) + str(bin(num_unique_bytes)[2:])
         dict_num_bytes = int_to_byte_string(num_unique_bytes)
-        # print("dict_num_bytes is", dict_num_bytes)
 
-        # dict_label_lengths = "".join(["0" * (8 - len(bin(len(bin(byte_label.label)[2:]))[2:]))
-        #                               + bin(len(bin(byte_label.label)[2:]))[2:] + " "
-        #                               for byte_label in byte_labels.byte_labels])
         dict_label_lengths = "".join([int_to_byte_string(len(bin(byte_label.label)[2:]))
                                       for byte_label in byte_labels.byte_labels])
-        # print("dict_label_lengths is", dict_label_lengths)
 
-        # dict_occurring_bytes = "".join(["0" * (8 - len(bin(byte)[2:]))
-        #                                 + bin(byte)[2:] + " "
-        #                                 for byte in occurring_bytes])
         dict_occurring_bytes = "".join([int_to_byte_string(byte)
                                         for byte in occurring_bytes])
-        # print("dict_occurring_bytes is", dict_occurring_bytes)
 
         massive_bitstring = "".join([b_number_padding_bits,
                                      dict_num_bytes,
@@ -282,27 +262,16 @@ def encode(filename):
     file_output = [int(massive_bitstring[index * 8: index * 8 + 8], base=2)
                    for index in range(int(len(massive_bitstring) / 8))]
 
-    # Now to write this to file
-
     # Derive new .hc filename
     output_filename = filename[:filename.rfind(".")] + ".hc"
-    print("Output filename is", output_filename)
-
-    # print("massive_bitstring is", massive_bitstring)
-    # print("Spaced massive_bitstring is", "".join([massive_bitstring[x]+" " if (x+1)%8==0 else massive_bitstring[x]
-    #                                               for x in range(len(massive_bitstring))]))
-    print("file_output is", file_output)
-    print("bytes(file_output) is", bytes(file_output))
-    print("struct thing is", struct.pack("B", int(massive_bitstring)))
 
     # Read the file byte by byte
     with open(output_filename, "wb") as f:
-        # f.write(file_output)
-        # f.write(bytearray(int(i, base=16) for i in file_output))
         f.write(bytes(file_output))
 
     # End time
     t1 = time()
+    print("Wrote encoded file to", output_filename)
     print("Process took " + str(round(t1 - t0, 5)) + " seconds")
 
 
