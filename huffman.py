@@ -94,9 +94,11 @@ class ByteLabel():
         return bl.byte
 
     def __repr__(self):
-        return "ByteLabel(byte={}, label=bitstring:{})".format(self.byte,
-                                                               bin(self.label)[2:]
-                                                               if self.label is not None else "None")
+        # return "ByteLabel(byte={}, label=bitstring:{})".format(self.byte,
+        #                                                        bin(self.label)[2:]
+        #                                                        if self.label is not None else "None")
+        return "ByteLabel(byte={}, label=bitstring:\"{}\")".format(self.byte,
+                                                                   self.label if self.label is not None else "None")
 
 
 class ByteLabels():
@@ -111,7 +113,8 @@ class ByteLabels():
         return False
 
     def sort_by_label_len(self):
-        self.byte_labels = sorted(self.byte_labels, key=lambda x: len(bin(x.label)))
+        # self.byte_labels = sorted(self.byte_labels, key=lambda x: len(bin(x.label)))
+        self.byte_labels = sorted(self.byte_labels, key=lambda x: len(x.label))
 
     def __repr__(self):
         return_string = ""
@@ -130,6 +133,13 @@ def int_to_byte_string(number):
     if number > 255:
         return None
     return "0" * (8 - len(bin(number)[2:])) + bin(number)[2:]
+
+# def bitstring_to_block(bitstring):
+#     """
+#     Takes any bitstring, e.g. 00110, and converts it to an 8-character bit string, e.g. 0000010.
+#     :param bitstring:
+#     :return:
+#     """
 
 
 def encode(filename):
@@ -190,23 +200,23 @@ def encode(filename):
         """
         if isinstance(tree, Branch):
             # Append the current_label with a zero
-            current_label <<= 1
+            # current_label <<= 1
 
             # Traverse the left tree and append label '0'
-            traverse_and_label(tree.left, current_label)
+            traverse_and_label(tree.left, current_label + "0")
 
             # Traverse the right tree and append label '1'
-            traverse_and_label(tree.right, current_label + 1)
+            traverse_and_label(tree.right, current_label + "1")
 
         elif isinstance(tree, Leaf):
             byte_labels.set_byte(tree.byte, current_label)
 
-    traverse_and_label(heap.pop().tree, 0)
+    traverse_and_label(heap.pop().tree, "")
 
     # Sort the byte labels by label length
     byte_labels.sort_by_label_len()
 
-    print(byte_labels)
+    # print(byte_labels)
 
     # Replace existing codes with new ones, as per canonical Huffman code algorithm
     latest_num = -1
@@ -216,14 +226,16 @@ def encode(filename):
         working_byte_label = byte_labels.byte_labels[i]
 
         # Increment the codeword by 1
-        new_codeword = latest_num + 1
+        new_codeword = bin(latest_num + 1)[2:]
 
         # Append 0 to the codeword until it has the same length as the old codeword
-        while len(bin(new_codeword)[2:]) < len(bin(working_byte_label.label)[2:]):
-            new_codeword <<= 1
+        # while len(bin(new_codeword)[2:]) < len(bin(working_byte_label.label)[2:]):
+        new_codeword += (len(working_byte_label.label) - len(new_codeword)) * "0"
+        # while len(new_codeword) < len(working_byte_label.label):
+        #     new_codeword += "0"
 
         # Update our counter for the codeword
-        latest_num = int(bin(new_codeword)[2:], 2)
+        latest_num = int(new_codeword, 2)
 
         # Assign the new codeword to the byte_label
         working_byte_label.label = new_codeword
@@ -233,9 +245,12 @@ def encode(filename):
     for byte in byte_labels.byte_labels:
         codewords[byte.byte] = byte.label
 
+    # print(codewords)
+
     # Convert the input file to one long compressed bitstring of 1s and 0s
     # using "".join because it's much faster than lots of string concatenation
-    encoded_file_contents = "".join([bin(codewords[byte])[2:] for byte in file_contents])
+    # encoded_file_contents = "".join([bin(codewords[byte])[2:] for byte in file_contents])
+    encoded_file_contents = "".join([codewords[byte] for byte in file_contents])
 
     # Calculate the necessary number of padding bits (we need to write a
     # multiple of 8 bits to file as we can only write bytes to file)
@@ -254,7 +269,9 @@ def encode(filename):
         dict_num_bytes = int_to_byte_string(num_unique_bytes)
 
         # Prepare the codeword lengths byte string
-        dict_label_lengths = "".join([int_to_byte_string(len(bin(byte_label.label)[2:]))
+        # dict_label_lengths = "".join([int_to_byte_string(len(bin(byte_label.label)[2:]))
+        #                               for byte_label in byte_labels.byte_labels])
+        dict_label_lengths = "".join([int_to_byte_string(len(byte_label.label))
                                       for byte_label in byte_labels.byte_labels])
 
         # Prepare the 'list of occurring bytes' byte string
