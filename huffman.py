@@ -216,7 +216,7 @@ def encode(filename):
     # Sort the byte labels by label length
     byte_labels.sort_by_label_len()
 
-    # print(byte_labels)
+    print(byte_labels)
 
     # Replace existing codes with new ones, as per canonical Huffman code algorithm
     latest_num = -1
@@ -241,11 +241,10 @@ def encode(filename):
         working_byte_label.label = new_codeword
 
     # Convert our custom ByteLabels object to a normal dictionary (it's faster)
-    codewords = defaultdict(int)
+    codewords = defaultdict(str)
     for byte in byte_labels.byte_labels:
         codewords[byte.byte] = byte.label
-
-    # print(codewords)
+    print(codewords)
 
     # Convert the input file to one long compressed bitstring of 1s and 0s
     # using "".join because it's much faster than lots of string concatenation
@@ -276,7 +275,9 @@ def encode(filename):
 
         # Prepare the 'list of occurring bytes' byte string
         dict_occurring_bytes = "".join([int_to_byte_string(byte)
-                                        for byte in occurring_bytes])
+                                        for byte in codewords.keys()])
+        # print("codewords.keys() is", codewords.keys())
+        # print("dict_occurring_bytes is", dict_occurring_bytes)
 
         # Whack everything into one massive string of bits
         massive_bitstring = "".join([b_number_padding_bits,
@@ -335,7 +336,7 @@ def decode(filename):
     for i in range(number_unique_bytes):
         bit_length = file_contents[i+2]
         occurring_byte = file_contents[i+number_unique_bytes+2]
-        label_length_dict[occurring_byte] = bit_length
+        label_length_dict[occurring_byte] = str(bit_length)
     print(label_length_dict)
 
     # Read the remaining bytes
@@ -353,7 +354,8 @@ def decode(filename):
 
     # Hackily store the length of the byte_label in the label field
     byte_labels = ByteLabels([ByteLabel(byte, label_length_dict[byte]) for byte in label_length_dict])
-    # print(byte_labels)
+    byte_labels.sort_by_label_len()
+    print(byte_labels)
 
     # Replace existing codes with new ones, as per canonical Huffman code algorithm
     latest_num = -1
@@ -361,31 +363,27 @@ def decode(filename):
     for i in range(number_unique_bytes):
         # Retrieve the current byte_label element
         working_byte_label = byte_labels.byte_labels[i]
-        # print(working_byte_label)
 
         # Increment the codeword by 1
-        new_codeword = latest_num + 1
+        new_codeword = bin(latest_num + 1)[2:]
 
         # Append 0 to the codeword until it has the same length as the old codeword
-        while len(bin(new_codeword)[2:]) < working_byte_label.label:
-            new_codeword <<= 1
+        # while len(bin(new_codeword)[2:]) < len(bin(working_byte_label.label)[2:]):
+        new_codeword += (int(working_byte_label.label) - len(new_codeword)) * "0"
+        # while len(new_codeword) < len(working_byte_label.label):
+        #     new_codeword += "0"
 
         # Update our counter for the codeword
-        latest_num = int(bin(new_codeword)[2:], 2)
+        latest_num = int(new_codeword, 2)
 
         # Assign the new codeword to the byte_label
         working_byte_label.label = new_codeword
-
-    # print(byte_labels)
 
     # Convert our custom ByteLabels object to a normal dictionary (it's faster)
     codewords = defaultdict(int)
     for byte in byte_labels.byte_labels:
         codewords[byte.byte] = byte.label
     print(codewords)
-
-    #
-
 
 # Parse initial arguments and react appropriately
 if len(sys.argv) != 3:
