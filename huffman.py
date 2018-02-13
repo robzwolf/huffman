@@ -1,3 +1,4 @@
+import operator
 from time import time
 import sys
 import heapq
@@ -74,6 +75,17 @@ class Branch(Tree):
         return "Branch( Left: {}, Right: {} )".format(self.left, self.right)
 
 
+class ByteLabel():
+    def __init__(self, byte, label):
+        """
+        A simple wrapper for a (byte, label) pair.
+        :param byte:
+        :param label:
+        """
+        self.byte = byte
+        self.label = label
+
+
 def encode(filename):
     """
     Encodes a file using Huffman coding.
@@ -139,7 +151,14 @@ def encode(filename):
             byte_labels[tree.byte] = current_label
 
     traverse_and_label(heap.pop().tree, "")
-    print(byte_labels)
+
+    # Print the byte labels
+    print("Byte labels are as follows:")
+    for byte in byte_labels:
+        print(byte, ":", byte_labels[byte])
+    print("Sorted byte labels as as follows:")
+    for byte in sorted(byte_labels.values(), key=len):
+        print(byte, ":", byte_labels[byte])
 
     # Convert the input file to one long compressed string of 1s and 0s
     output = ""
