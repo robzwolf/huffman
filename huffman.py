@@ -216,7 +216,7 @@ def encode(filename):
     # Sort the byte labels by label length
     byte_labels.sort_by_label_len()
 
-    print(byte_labels)
+    # print(byte_labels)
 
     # Replace existing codes with new ones, as per canonical Huffman code algorithm
     latest_num = -1
@@ -244,7 +244,7 @@ def encode(filename):
     codewords = defaultdict(str)
     for byte in byte_labels.byte_labels:
         codewords[byte.byte] = byte.label
-    print(codewords)
+    # print(codewords)
 
     # Convert the input file to one long compressed bitstring of 1s and 0s
     # using "".join because it's much faster than lots of string concatenation
@@ -276,8 +276,6 @@ def encode(filename):
         # Prepare the 'list of occurring bytes' byte string
         dict_occurring_bytes = "".join([int_to_byte_string(byte)
                                         for byte in codewords.keys()])
-        # print("codewords.keys() is", codewords.keys())
-        # print("dict_occurring_bytes is", dict_occurring_bytes)
 
         # Whack everything into one massive string of bits
         massive_bitstring = "".join([b_number_padding_bits,
