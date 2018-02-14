@@ -350,8 +350,10 @@ def decode(filename):
 
     # Convert our long bitstring back into a list of bytes using our reverse_codewords dictionary
     decoded_file_contents_list = bytearray()
-    label_max_length = max(map(lambda x: len(x), reverse_codewords.keys()))
+    label_max_length = max(len(x) for x in reverse_codewords.keys())
 
+    # Do a double-counter search to check each group of bits for a bitstring match, look up the relevant
+    # byte and add it to decoded_file_contents_list, then move both counters forward and continue the search
     i = 0
     while i <= len(encoded_file_contents):
         for j in range(i + 1, i + label_max_length + 1):
@@ -403,5 +405,6 @@ def main():
         sys.exit(1)
 
 
+# If we're running this module directly rather than importing it
 if __name__ == "__main__":
     main()
