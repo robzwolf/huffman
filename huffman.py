@@ -1,7 +1,7 @@
 from time import time
 import sys
 import heapq
-from collections import defaultdict
+from collections import OrderedDict
 
 
 class Heap:
@@ -219,7 +219,7 @@ def encode(filename):
         working_byte_label.label = bin(latest_num)[3:]
 
     # Convert our custom ByteLabels object to a normal dictionary (it's faster)
-    codewords = defaultdict(str)
+    codewords = OrderedDict(str)
     for byte in byte_labels.byte_labels:
         codewords[byte.byte] = byte.label
 
@@ -303,7 +303,7 @@ def decode(filename):
 
     # Count the codeword bit lengths for those number_unique_bytes bytes, read the occurring bytes, and
     # associate them with their lengths in a dictionary
-    label_length_dict = defaultdict(int)
+    label_length_dict = OrderedDict(int)
     for i in range(number_unique_bytes):
         bit_length = file_contents[i + 2]
         occurring_byte = file_contents[i + number_unique_bytes + 2]
@@ -341,7 +341,7 @@ def decode(filename):
 
     # Convert our custom ByteLabels object to a reverse dictionary (it's faster)
     # so that we can lookup a byte associated with a codeword
-    reverse_codewords = defaultdict(int)
+    reverse_codewords = OrderedDict(int)
     for byte in byte_labels.byte_labels:
         reverse_codewords[byte.label] = byte.byte
 
