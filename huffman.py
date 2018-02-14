@@ -72,7 +72,7 @@ class Branch(Tree):
         return "Branch( Left: {}, Right: {} )".format(self.left, self.right)
 
 
-class ByteLabel():
+class ByteLabel:
     def __init__(self, byte, label):
         """
         A simple wrapper for a (byte, label) pair.
@@ -95,7 +95,7 @@ class ByteLabel():
                                                                    self.label if self.label is not None else "None")
 
 
-class ByteLabels():
+class ByteLabels:
     def __init__(self, byte_labels):
         self.byte_labels = byte_labels
 
@@ -125,9 +125,7 @@ def int_to_byte_string(number):
     """
     if number > 255:
         return None
-    output_string = "0" * (8 - len(bin(number)[2:])) + bin(number)[2:]
-    # print(number, "mapped to", output_string)
-    return output_string
+    return "0" * (8 - len(bin(number)[2:])) + bin(number)[2:]
 
 
 def encode(filename):
@@ -160,7 +158,7 @@ def encode(filename):
         freqs[file_contents[i]] += 1
 
     # Make a list of the bytes we intend to encode
-    occurring_bytes = [each_byte for each_byte in range(256) if freqs[each_byte] != 0]
+    occurring_bytes = [each_byte for each_byte in range(256) if freqs[each_byte]]
 
     # Define the heap, initially a load of heap elements consisting of only Leaves
     heap = Heap([HeapElement(freqs[byte], Leaf(byte)) for byte in occurring_bytes])
@@ -204,7 +202,7 @@ def encode(filename):
 
     # Replace existing codes with new ones, as per canonical Huffman code algorithm
     # Keep all the numbers with a leading 1 so that we don't lose the leading 0s from the label
-    # Start with a 1 so that our first label is (1)0, (1)00, (1)000 or whatever it needs to be
+    # Start with latest_num = 1 so that our first label is (1)0, (1)00, (1)000 or whatever it needs to be
     latest_num = 1
     # Iterate through every occurring byte
     for i in range(num_unique_bytes):
@@ -217,7 +215,7 @@ def encode(filename):
         # Left-shift latest_num by the appropriate number of left-shifts
         latest_num <<= (len(working_byte_label.label) - latest_num.bit_length() + 1)
 
-        # Assign the new codeword to the byte_label
+        # Assign the new codeword to the byte_label (cutting of the 0b1, see comment about leading zeros / one)
         working_byte_label.label = bin(latest_num)[3:]
 
     # Convert our custom ByteLabels object to a normal dictionary (it's faster)
@@ -250,8 +248,7 @@ def encode(filename):
         dict_label_lengths = "".join(label_strings)
 
         # Prepare the 'list of occurring bytes' byte string
-        dict_occurring_bytes = "".join([int_to_byte_string(byte)
-                                        for byte in codewords.keys()])
+        dict_occurring_bytes = "".join([int_to_byte_string(byte) for byte in codewords.keys()])
 
         # Whack everything into one massive string of bits
         massive_bitstring = "".join([b_number_padding_bits,
@@ -268,7 +265,7 @@ def encode(filename):
     # Derive new .hc filename
     output_filename = filename[:filename.rfind(".")] + ".hc"
 
-    # Read the file byte by byte
+    # Write the file byte-by-byte
     with open(output_filename, "wb") as f:
         f.write(bytes(file_output))
 
