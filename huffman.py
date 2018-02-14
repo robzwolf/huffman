@@ -1,10 +1,7 @@
 from time import time
 import sys
 import heapq
-
 from collections import defaultdict
-
-import struct
 
 
 class Heap:
@@ -94,9 +91,6 @@ class ByteLabel():
         return bl.byte
 
     def __repr__(self):
-        # return "ByteLabel(byte={}, label=bitstring:{})".format(self.byte,
-        #                                                        bin(self.label)[2:]
-        #                                                        if self.label is not None else "None")
         return "ByteLabel(byte={}, label=bitstring:\"{}\")".format(self.byte,
                                                                    self.label if self.label is not None else "None")
 
@@ -113,7 +107,6 @@ class ByteLabels():
         return False
 
     def sort_by_label_len(self):
-        # self.byte_labels = sorted(self.byte_labels, key=lambda x: len(bin(x.label)))
         self.byte_labels = sorted(self.byte_labels, key=lambda x: len(x.label))
 
     def __repr__(self):
@@ -135,13 +128,6 @@ def int_to_byte_string(number):
     output_string = "0" * (8 - len(bin(number)[2:])) + bin(number)[2:]
     # print(number, "mapped to", output_string)
     return output_string
-
-# def bitstring_to_block(bitstring):
-#     """
-#     Takes any bitstring, e.g. 00110, and converts it to an 8-character bit string, e.g. 0000010.
-#     :param bitstring:
-#     :return:
-#     """
 
 
 def encode(filename):
@@ -201,9 +187,6 @@ def encode(filename):
         :param current_label: The label so far
         """
         if isinstance(tree, Branch):
-            # Append the current_label with a zero
-            # current_label <<= 1
-
             # Traverse the left tree and append label '0'
             traverse_and_label(tree.left, current_label + "0")
 
@@ -217,8 +200,6 @@ def encode(filename):
 
     # Sort the byte labels by label length
     byte_labels.sort_by_label_len()
-
-    # print(byte_labels)
 
     # Replace existing codes with new ones, as per canonical Huffman code algorithm
     latest_num = 1
@@ -240,19 +221,15 @@ def encode(filename):
     codewords = defaultdict(str)
     for byte in byte_labels.byte_labels:
         codewords[byte.byte] = byte.label
-    print("codewords are", codewords)
 
     # Convert the input file to one long compressed bitstring of 1s and 0s
     # using "".join because it's much faster than lots of string concatenation
-    # encoded_file_contents = "".join([bin(codewords[byte])[2:] for byte in file_contents])
     encoded_file_contents = "".join([codewords[byte] for byte in file_contents])
 
     # Calculate the necessary number of padding bits (we need to write a
     # multiple of 8 bits to file as we can only write bytes to file)
     number_padding_bits = 8 - (len(encoded_file_contents) % 8)
-    print("number_padding_bits", number_padding_bits)
     b_number_padding_bits = int_to_byte_string(number_padding_bits)
-    print("b_number_padding_bits", b_number_padding_bits)
 
     # Use Method 1 if num_unique_bytes is greater than 128
     # Use Method 2 if num_unique_bytes is less than or equal to 128
@@ -264,28 +241,14 @@ def encode(filename):
 
         # Prepare the byte string that describes the number of unique bytes
         dict_num_bytes = int_to_byte_string(num_unique_bytes)
-        print("num_unique_bytes is", num_unique_bytes)
-        print("dict_num_bytes is", dict_num_bytes)
 
         # Prepare the codeword lengths byte string
-        # dict_label_lengths = "".join([int_to_byte_string(len(bin(byte_label.label)[2:]))
-        #                               for byte_label in byte_labels.byte_labels])
-        # dict_label_lengths = "".join([int_to_byte_string(len(byte_label.label))
-        #                               for byte_label in byte_labels.byte_labels])
-        print("raw lengths are", [len(codewords[byte]) for byte in codewords.keys()])
         label_strings = [int_to_byte_string(len(codewords[byte])) for byte in codewords.keys()]
-        print("converted lengths are", label_strings)
-        # dict_label_lengths = "".join([int_to_byte_string(len(codewords[byte])) for byte in codewords.keys()])
-        # dict_label_lengths = "".join([int_to_byte_string(len(codewords[byte])) for byte in codewords.keys()])
-        # dict_label_lengths = "".join(map(lambda x: int_to_byte_string(x), codewords.keys()))
         dict_label_lengths = "".join(label_strings)
-        # print("dict_label_lengths are",[dict_label_lengths[i:i+8] for i in range(int(len(dict_label_lengths)/8))])
-        print("dict_label_lengths raw are", dict_label_lengths)
 
         # Prepare the 'list of occurring bytes' byte string
         dict_occurring_bytes = "".join([int_to_byte_string(byte)
                                         for byte in codewords.keys()])
-        print("dict_occurring_bytes is", dict_occurring_bytes)
 
         # Whack everything into one massive string of bits
         massive_bitstring = "".join([b_number_padding_bits,
@@ -294,13 +257,10 @@ def encode(filename):
                                      dict_occurring_bytes,
                                      encoded_file_contents,
                                      "0" * number_padding_bits])
-        print("massive_bitstring is", massive_bitstring)
 
     # Convert the string of 1s and 0s to a list of bytes
     file_output = [int(massive_bitstring[index * 8: index * 8 + 8], base=2)
                    for index in range(int(len(massive_bitstring) / 8))]
-    print(file_output)
-    print(bytes(file_output))
 
     # Derive new .hc filename
     output_filename = filename[:filename.rfind(".")] + ".hc"
@@ -324,6 +284,8 @@ def decode(filename):
         :return:
         """
 
+    t0 = time()
+
     # Read the file byte by byte
     with open(filename, "rb") as f:
         try:
@@ -331,15 +293,12 @@ def decode(filename):
         except IOError:
             print("Error reading file:", filename)
             sys.exit(1)
-    print(file_contents)
 
     # First byte is the number of padding zeros
     number_padding_zeros = int(file_contents[0])
-    print("number_padding_zeros", number_padding_zeros)
 
     # Second byte is the number of occurring bytes
     number_unique_bytes = file_contents[1]
-    print("number_unique_bytes", number_unique_bytes)
 
     # Count the codeword bit lengths for those number_unique_bytes bytes, read the occurring bytes, and
     # associate them with their lengths in a dictionary
@@ -347,13 +306,10 @@ def decode(filename):
     for i in range(number_unique_bytes):
         bit_length = file_contents[i+2]
         occurring_byte = file_contents[i+number_unique_bytes+2]
-        print("raw byte #{} = byte({}) was assigned bit_length({})".format(i+number_unique_bytes+2, occurring_byte, bit_length))
         label_length_dict[occurring_byte] = bit_length
-    print("label_length_dict is", label_length_dict)
 
     # Read the remaining bytes
     byte_encoded_file_contents = file_contents[2+2*number_unique_bytes:]
-    print("byte_encoded_file_contents", byte_encoded_file_contents)
 
     # Convert the remaining bytes (except the last one) to bits
     encoded_file_contents = "".join([int_to_byte_string(byte_encoded_file_contents[i])
@@ -362,34 +318,11 @@ def decode(filename):
     # Append the last byte after we have removed the padding zeros
     encoded_file_contents += int_to_byte_string(byte_encoded_file_contents[
                                                     len(byte_encoded_file_contents)-1])[:8-number_padding_zeros]
-    print("encoded_file_contents is", encoded_file_contents)
 
     # Hackily store the length of the byte_label in the label field
     byte_labels = ByteLabels([ByteLabel(byte, "x" * label_length_dict[byte]) for byte in label_length_dict])
-    print("unsorted:", byte_labels)
-    # byte_labels.sort_by_label_len()
-    # print("sorted:", byte_labels)
 
-    # # Replace existing codes with new ones, as per canonical Huffman code algorithm
-    # latest_num = -1
-    # # Iterate through every occurring byte
-    # for i in range(number_unique_bytes):
-    #     # Retrieve the current byte_label element
-    #     working_byte_label = byte_labels.byte_labels[i]
-    #
-    #     # Increment the codeword by 1
-    #     new_codeword = bin(latest_num + 1)[2:]
-    #
-    #     # Append 0 to the codeword until it has the same length as the old codeword
-    #     new_codeword += (len(working_byte_label.label) - len(new_codeword)) * "0"
-    #
-    #     # Update our counter for the codeword
-    #     latest_num = int(new_codeword, 2)
-    #
-    #     # Assign the new codeword to the byte_label
-    #     working_byte_label.label = new_codeword
-
-    # Replace existing codes with new ones, as per canonical Huffman code algorithm
+    # Reconstruct the codewords, as per canonical Huffman code algorithm
     latest_num = 1
     # Iterate through every occurring byte
     for i in range(number_unique_bytes):
@@ -410,25 +343,24 @@ def decode(filename):
     reverse_codewords = defaultdict(int)
     for byte in byte_labels.byte_labels:
         reverse_codewords[byte.label] = byte.byte
-    print("reverse_codewords is", reverse_codewords)
 
     # Convert our long bitstring back into text using our reverse_codewords dictionary
     decoded_file_contents_list = []
     label_max_length = max(map(lambda x: len(x), reverse_codewords.keys()))
-    print("label_max_length is", label_max_length)
 
     i = 0
     while i <= len(encoded_file_contents):
         for j in range(i+1, i+label_max_length+1):
             if encoded_file_contents[i:j] in reverse_codewords.keys():
-                # print("Found string", encoded_file_contents[i:j], "with index i =", i, " and j =", j, "which maps to", reverse_codewords[encoded_file_contents[i:j]])
                 decoded_file_contents_list.append(chr(reverse_codewords[encoded_file_contents[i:j]]))
                 i = j - 1
                 break
         i += 1
-    # print("decoded_file_contents_list is", decoded_file_contents_list)
+
     decoded_file_contents = "".join(decoded_file_contents_list)
-    print("decoded_file_contents is", decoded_file_contents)
+    t1 = time()
+
+    print("Process completed in", t1-t0, "seconds.")
 
 
 # Parse initial arguments and react appropriately
