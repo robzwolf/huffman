@@ -132,7 +132,9 @@ def int_to_byte_string(number):
     """
     if number > 255:
         return None
-    return "0" * (8 - len(bin(number)[2:])) + bin(number)[2:]
+    output_string = "0" * (8 - len(bin(number)[2:])) + bin(number)[2:]
+    print(number, "mapped to", output_string)
+    return output_string
 
 # def bitstring_to_block(bitstring):
 #     """
@@ -244,7 +246,7 @@ def encode(filename):
     codewords = defaultdict(str)
     for byte in byte_labels.byte_labels:
         codewords[byte.byte] = byte.label
-    # print(codewords)
+    print("codewords are", codewords)
 
     # Convert the input file to one long compressed bitstring of 1s and 0s
     # using "".join because it's much faster than lots of string concatenation
@@ -270,8 +272,14 @@ def encode(filename):
         # Prepare the codeword lengths byte string
         # dict_label_lengths = "".join([int_to_byte_string(len(bin(byte_label.label)[2:]))
         #                               for byte_label in byte_labels.byte_labels])
-        dict_label_lengths = "".join([int_to_byte_string(len(byte_label.label))
-                                      for byte_label in byte_labels.byte_labels])
+        # dict_label_lengths = "".join([int_to_byte_string(len(byte_label.label))
+        #                               for byte_label in byte_labels.byte_labels])
+        print("raw lengths are", [len(codewords[byte]) for byte in codewords.keys()])
+        print("converted lengths are", [int_to_byte_string(len(codewords[byte])) for byte in codewords.keys()])
+        # dict_label_lengths = "".join([int_to_byte_string(len(codewords[byte])) for byte in codewords.keys()])
+        # dict_label_lengths = "".join([int_to_byte_string(len(codewords[byte])) for byte in codewords.keys()])
+        dict_label_lengths = "".join(map(lambda x: int_to_byte_string(x), codewords.keys()))
+        print("dict_label_lengths are",[dict_label_lengths[i:i+8] for i in range(int(len(dict_label_lengths)/8))])
 
         # Prepare the 'list of occurring bytes' byte string
         dict_occurring_bytes = "".join([int_to_byte_string(byte)
@@ -348,7 +356,7 @@ def decode(filename):
     # Append the last byte after we have removed the padding zeros
     encoded_file_contents += int_to_byte_string(byte_encoded_file_contents[
                                                     len(byte_encoded_file_contents)-1])[:8-number_padding_zeros]
-    print(encoded_file_contents)
+    print("encoded_file_contents is", encoded_file_contents)
 
     # Hackily store the length of the byte_label in the label field
     byte_labels = ByteLabels([ByteLabel(byte, label_length_dict[byte]) for byte in label_length_dict])
@@ -366,10 +374,7 @@ def decode(filename):
         new_codeword = bin(latest_num + 1)[2:]
 
         # Append 0 to the codeword until it has the same length as the old codeword
-        # while len(bin(new_codeword)[2:]) < len(bin(working_byte_label.label)[2:]):
         new_codeword += (int(working_byte_label.label) - len(new_codeword)) * "0"
-        # while len(new_codeword) < len(working_byte_label.label):
-        #     new_codeword += "0"
 
         # Update our counter for the codeword
         latest_num = int(new_codeword, 2)
@@ -377,11 +382,30 @@ def decode(filename):
         # Assign the new codeword to the byte_label
         working_byte_label.label = new_codeword
 
-    # Convert our custom ByteLabels object to a normal dictionary (it's faster)
-    codewords = defaultdict(int)
+    # Convert our custom ByteLabels object to a reverse dictionary (it's faster)
+    # so that we can lookup a byte associated with a codeword
+    reverse_codewords = defaultdict(int)
     for byte in byte_labels.byte_labels:
-        codewords[byte.byte] = byte.label
-    print(codewords)
+        reverse_codewords[byte.label] = byte.byte
+    print("reverse_codewords is", reverse_codewords)
+
+    # Convert our long bitstring back into text using our reverse_codewords dictionary
+    decoded_file_contents_list = []
+    label_max_length = max(map(lambda x: len(x), reverse_codewords.keys()))
+    print("label_max_length is", label_max_length)
+
+    i = 0
+    while i <= len(encoded_file_contents):
+        for j in range(i+1, i+label_max_length+1):
+            if encoded_file_contents[i:j] in reverse_codewords.keys():
+                decoded_file_contents_list.append(chr(reverse_codewords[encoded_file_contents[i:j]]))
+                i = j - 1
+                break
+        i += 1
+    print("decoded_file_contents_list is", decoded_file_contents_list)
+    decoded_file_contents = "".join(decoded_file_contents_list)
+    print("decoded_file_contents is", decoded_file_contents)
+
 
 # Parse initial arguments and react appropriately
 if len(sys.argv) != 3:
