@@ -242,31 +242,23 @@ def encode(filename):
     number_padding_bits = 8 - (len(encoded_file_contents) % 8)
     b_number_padding_bits = int_to_byte_string(number_padding_bits)
 
-    # Use Method 1 if num_unique_bytes is greater than 128
-    # Use Method 2 if num_unique_bytes is less than or equal to 128
-    if num_unique_bytes >= 129:
-        # Use Method 1
-        massive_bitstring = ""
-    else:
-        # Use Method 2
+    # Prepare the byte string that describes the number of unique bytes
+    dict_num_bytes = int_to_byte_string(num_unique_bytes)
 
-        # Prepare the byte string that describes the number of unique bytes
-        dict_num_bytes = int_to_byte_string(num_unique_bytes)
+    # Prepare the codeword lengths byte string
+    label_strings = [int_to_byte_string(len(codewords[byte])) for byte in codewords.keys()]
+    dict_label_lengths = "".join(label_strings)
 
-        # Prepare the codeword lengths byte string
-        label_strings = [int_to_byte_string(len(codewords[byte])) for byte in codewords.keys()]
-        dict_label_lengths = "".join(label_strings)
+    # Prepare the 'list of occurring bytes' byte string
+    dict_occurring_bytes = "".join([int_to_byte_string(byte) for byte in codewords.keys()])
 
-        # Prepare the 'list of occurring bytes' byte string
-        dict_occurring_bytes = "".join([int_to_byte_string(byte) for byte in codewords.keys()])
-
-        # Whack everything into one massive string of bits
-        massive_bitstring = "".join([b_number_padding_bits,
-                                     dict_num_bytes,
-                                     dict_label_lengths,
-                                     dict_occurring_bytes,
-                                     encoded_file_contents,
-                                     "0" * number_padding_bits])
+    # Whack everything into one massive string of bits
+    massive_bitstring = "".join([b_number_padding_bits,
+                                 dict_num_bytes,
+                                 dict_label_lengths,
+                                 dict_occurring_bytes,
+                                 encoded_file_contents,
+                                 "0" * number_padding_bits])
 
     # Convert the string of 1s and 0s to a list of bytes
     file_output = [int(massive_bitstring[index * 8: index * 8 + 8], base=2)
