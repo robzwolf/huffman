@@ -203,6 +203,8 @@ def encode(filename):
     byte_labels.sort_by_label_len()
 
     # Replace existing codes with new ones, as per canonical Huffman code algorithm
+    # Keep all the numbers with a leading 1 so that we don't lose the leading 0s from the label
+    # Start with a 1 so that our first label is (1)0, (1)00, (1)000 or whatever it needs to be
     latest_num = 1
     # Iterate through every occurring byte
     for i in range(num_unique_bytes):
@@ -394,6 +396,7 @@ def main():
     elif mode == "-d":
         if not filename.endswith(".hc"):
             print("Invalid file type, should have extension .hc")
+            sys.exit(1)
         decode(filename)
     else:
         print("Invalid mode, should be -e or -d")
