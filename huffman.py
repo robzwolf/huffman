@@ -160,68 +160,78 @@ def encode(filename):
     # Make a list of the bytes we intend to encode
     occurring_bytes = [each_byte for each_byte in range(256) if freqs[each_byte]]
 
-    # Define the heap, initially a load of heap elements consisting of only Leaves
-    heap = Heap([HeapElement(freqs[byte], Leaf(byte)) for byte in occurring_bytes])
+    num_unique_bytes = len(occurring_bytes)
 
-    num_unique_bytes = len(heap)
-
-    # Iterate through the heap until we have a huge frequency tree inside a single HeapElement
-    while len(heap) > 1:
-        smallest = heap.pop()
-        second_smallest = heap.pop()
-        heap.push(
-            HeapElement(
-                smallest.frequency + second_smallest.frequency,
-                Branch(smallest.tree, second_smallest.tree)
-            )
-        )
-
-    # Traverse through the tree and work out the label for each byte
-    byte_labels = ByteLabels([ByteLabel(byte, None) for byte in occurring_bytes])
-
-    def traverse_and_label(tree, current_label):
-        """
-        Traverse through a tree and label each leaf appropriately.
-        :param tree: The tree to traverse
-        :param current_label: The label so far
-        """
-        if isinstance(tree, Branch):
-            # Traverse the left tree and append label '0'
-            traverse_and_label(tree.left, current_label + "0")
-
-            # Traverse the right tree and append label '1'
-            traverse_and_label(tree.right, current_label + "1")
-
-        elif isinstance(tree, Leaf):
-            byte_labels.set_byte(tree.byte, current_label)
-
-    traverse_and_label(heap.pop().tree, "")
-
-    # Sort the byte labels by label length
-    byte_labels.sort_by_label_len()
-
-    # Replace existing codes with new ones, as per canonical Huffman code algorithm
-    # Keep all the numbers with a leading 1 so that we don't lose the leading 0s from the label
-    # Start with latest_num = 1 so that our first label is (1)0, (1)00, (1)000 or whatever it needs to be
-    latest_num = 1
-    # Iterate through every occurring byte
-    for i in range(num_unique_bytes):
-        # Retrieve the current byte_label element
-        working_byte_label = byte_labels.byte_labels[i]
-
-        # Increment latest_num by 1, as per algorithm
-        latest_num += 1
-
-        # Left-shift latest_num by the appropriate number of left-shifts
-        latest_num <<= (len(working_byte_label.label) - latest_num.bit_length() + 1)
-
-        # Assign the new codeword to the byte_label (cutting of the 0b1, see comment about leading zeros / one)
-        working_byte_label.label = bin(latest_num)[3:]
-
-    # Convert our custom ByteLabels object to a normal dictionary (it's faster)
     codewords = OrderedDict()
-    for byte in byte_labels.byte_labels:
-        codewords[byte.byte] = byte.label
+
+    if len(occurring_bytes) == 0:
+        pass
+    elif len(occurring_bytes) == 1:
+        codewords[occurring_bytes[0]] = "0"
+    else:
+
+        # Define the heap, initially a load of heap elements consisting of only Leaves
+        heap = Heap([HeapElement(freqs[byte], Leaf(byte)) for byte in occurring_bytes])
+
+        # num_unique_bytes = len(heap)
+
+        # Iterate through the heap until we have a huge frequency tree inside a single HeapElement
+        while len(heap) > 1:
+            smallest = heap.pop()
+            second_smallest = heap.pop()
+            heap.push(
+                HeapElement(
+                    smallest.frequency + second_smallest.frequency,
+                    Branch(smallest.tree, second_smallest.tree)
+                )
+            )
+
+        # Traverse through the tree and work out the label for each byte
+        byte_labels = ByteLabels([ByteLabel(byte, None) for byte in occurring_bytes])
+
+        def traverse_and_label(tree, current_label):
+            """
+            Traverse through a tree and label each leaf appropriately.
+            :param tree: The tree to traverse
+            :param current_label: The label so far
+            """
+            if isinstance(tree, Branch):
+                # Traverse the left tree and append label '0'
+                traverse_and_label(tree.left, current_label + "0")
+
+                # Traverse the right tree and append label '1'
+                traverse_and_label(tree.right, current_label + "1")
+
+            elif isinstance(tree, Leaf):
+                byte_labels.set_byte(tree.byte, current_label)
+
+        traverse_and_label(heap.pop().tree, "")
+
+        # Sort the byte labels by label length
+        byte_labels.sort_by_label_len()
+
+        # Replace existing codes with new ones, as per canonical Huffman code algorithm
+        # Keep all the numbers with a leading 1 so that we don't lose the leading 0s from the label
+        # Start with latest_num = 1 so that our first label is (1)0, (1)00, (1)000 or whatever it needs to be
+        latest_num = 1
+        # Iterate through every occurring byte
+        for i in range(num_unique_bytes):
+            # Retrieve the current byte_label element
+            working_byte_label = byte_labels.byte_labels[i]
+
+            # Increment latest_num by 1, as per algorithm
+            latest_num += 1
+
+            # Left-shift latest_num by the appropriate number of left-shifts
+            latest_num <<= (len(working_byte_label.label) - latest_num.bit_length() + 1)
+
+            # Assign the new codeword to the byte_label (cutting of the 0b1, see comment about leading zeros / one)
+            working_byte_label.label = bin(latest_num)[3:]
+
+        # Convert our custom ByteLabels object to a normal dictionary (it's faster)
+        # codewords = OrderedDict()
+        for byte in byte_labels.byte_labels:
+            codewords[byte.byte] = byte.label
 
     # Convert the input file to one long compressed bitstring of 1s and 0s
     # using "".join because it's much faster than lots of string concatenation
@@ -272,8 +282,8 @@ def encode(filename):
     # End time
     t1 = time()
 
-    print("Wrote encoded file to", output_filename)
-    print("Process took " + str(round(t1 - t0, 5)) + " seconds")
+    print("Encode completed. Wrote encoded file to", output_filename)
+    print("Process took", round(t1 - t0, 5), "seconds")
 
 
 def decode(filename):
@@ -295,11 +305,15 @@ def decode(filename):
         print(e)
         sys.exit(1)
 
+    print("Decoding:", filename)
+
     # First byte is the number of padding zeros
     number_padding_zeros = int(file_contents[0])
 
     # Second byte is the number of occurring bytes
     number_unique_bytes = file_contents[1]
+
+    reverse_codewords = OrderedDict()
 
     # Count the codeword bit lengths for those number_unique_bytes bytes, read the occurring bytes, and
     # associate them with their lengths in a dictionary
@@ -319,31 +333,54 @@ def decode(filename):
     # Append the last byte after we have removed the padding zeros
     encoded_file_contents += int_to_byte_string(byte_encoded_file_contents[
                                                     len(byte_encoded_file_contents) - 1])[:8 - number_padding_zeros]
+    if number_unique_bytes == 0:
+        # Just create the empty decode file
 
-    # Hackily store the length of the byte_label in the label field
-    byte_labels = ByteLabels([ByteLabel(byte, "x" * label_length_dict[byte]) for byte in label_length_dict])
+        # Derive new .txt filename
+        output_filename = filename[:filename.rfind(".")] + "_decoded.txt"
 
-    # Reconstruct the codewords, as per canonical Huffman code algorithm
-    latest_num = 1
-    # Iterate through every occurring byte
-    for i in range(number_unique_bytes):
-        # Retrieve the current byte_label element
-        working_byte_label = byte_labels.byte_labels[i]
+        # Write an empty bytearray to file
+        try:
+            with open(output_filename, "wb") as f:
+                f.write(bytearray())
+        except IOError as e:
+            print("Error writing to file:", filename)
+            print(e)
 
-        # Increment latest_num by 1, as per algorithm
-        latest_num += 1
+        print("Decode completed. Wrote file contents to", output_filename)
+        t1 = time()
+        print("Process completed in", round(t1 - t0, 5), "seconds.")
+        sys.exit(0)
 
-        # Left-shift latest_num by the appropriate number of left-shifts
-        latest_num <<= (len(working_byte_label.label) - latest_num.bit_length() + 1)
+    elif number_unique_bytes == 1:
+        # Hard read fourth byte of the file and assign this to codeword "0"
+        occurring_byte = file_contents[3]
+        reverse_codewords["0"] = occurring_byte
 
-        # Assign the new codeword to the byte_label
-        working_byte_label.label = bin(latest_num)[3:]
+    else:
+        # Hackily store the length of the byte_label in the label field
+        byte_labels = ByteLabels([ByteLabel(byte, "x" * label_length_dict[byte]) for byte in label_length_dict])
 
-    # Convert our custom ByteLabels object to a reverse dictionary (it's faster)
-    # so that we can lookup a byte associated with a codeword
-    reverse_codewords = OrderedDict()
-    for byte in byte_labels.byte_labels:
-        reverse_codewords[byte.label] = byte.byte
+        # Reconstruct the codewords, as per canonical Huffman code algorithm
+        latest_num = 1
+        # Iterate through every occurring byte
+        for i in range(number_unique_bytes):
+            # Retrieve the current byte_label element
+            working_byte_label = byte_labels.byte_labels[i]
+
+            # Increment latest_num by 1, as per algorithm
+            latest_num += 1
+
+            # Left-shift latest_num by the appropriate number of left-shifts
+            latest_num <<= (len(working_byte_label.label) - latest_num.bit_length() + 1)
+
+            # Assign the new codeword to the byte_label
+            working_byte_label.label = bin(latest_num)[3:]
+
+        # Convert our custom ByteLabels object to a reverse dictionary (it's faster)
+        # so that we can lookup a byte associated with a codeword
+        for byte in byte_labels.byte_labels:
+            reverse_codewords[byte.label] = byte.byte
 
     # Convert our long bitstring back into a list of bytes using our reverse_codewords dictionary
     decoded_file_contents_list = bytearray()
@@ -371,11 +408,11 @@ def decode(filename):
         print("Error writing to file:", filename)
         print(e)
 
-    print("Wrote file contents to", output_filename)
+    print("Decode completed. Wrote file contents to", output_filename)
 
     t1 = time()
 
-    print("Process completed in", t1 - t0, "seconds.")
+    print("Process completed in", round(t1 - t0, 5), "seconds.")
 
 
 def main():
