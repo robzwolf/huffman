@@ -370,24 +370,40 @@ def decode(filename):
     # byte_labels.sort_by_label_len()
     # print("sorted:", byte_labels)
 
+    # # Replace existing codes with new ones, as per canonical Huffman code algorithm
+    # latest_num = -1
+    # # Iterate through every occurring byte
+    # for i in range(number_unique_bytes):
+    #     # Retrieve the current byte_label element
+    #     working_byte_label = byte_labels.byte_labels[i]
+    #
+    #     # Increment the codeword by 1
+    #     new_codeword = bin(latest_num + 1)[2:]
+    #
+    #     # Append 0 to the codeword until it has the same length as the old codeword
+    #     new_codeword += (len(working_byte_label.label) - len(new_codeword)) * "0"
+    #
+    #     # Update our counter for the codeword
+    #     latest_num = int(new_codeword, 2)
+    #
+    #     # Assign the new codeword to the byte_label
+    #     working_byte_label.label = new_codeword
+
     # Replace existing codes with new ones, as per canonical Huffman code algorithm
-    latest_num = -1
+    latest_num = 1
     # Iterate through every occurring byte
     for i in range(number_unique_bytes):
         # Retrieve the current byte_label element
         working_byte_label = byte_labels.byte_labels[i]
 
-        # Increment the codeword by 1
-        new_codeword = bin(latest_num + 1)[2:]
+        # Increment latest_num by 1
+        latest_num += 1
 
-        # Append 0 to the codeword until it has the same length as the old codeword
-        new_codeword += (len(working_byte_label.label) - len(new_codeword)) * "0"
-
-        # Update our counter for the codeword
-        latest_num = int(new_codeword, 2)
+        # Left-shift latest_num by the appropriate number of left-shifts
+        latest_num <<= (len(working_byte_label.label) - latest_num.bit_length() + 1)
 
         # Assign the new codeword to the byte_label
-        working_byte_label.label = new_codeword
+        working_byte_label.label = bin(latest_num)[3:]
 
     # Convert our custom ByteLabels object to a reverse dictionary (it's faster)
     # so that we can lookup a byte associated with a codeword
@@ -405,12 +421,12 @@ def decode(filename):
     while i <= len(encoded_file_contents):
         for j in range(i+1, i+label_max_length+1):
             if encoded_file_contents[i:j] in reverse_codewords.keys():
-                print("Found string", encoded_file_contents[i:j], "with index i =", i, " and j =", j, "which maps to", reverse_codewords[encoded_file_contents[i:j]])
+                # print("Found string", encoded_file_contents[i:j], "with index i =", i, " and j =", j, "which maps to", reverse_codewords[encoded_file_contents[i:j]])
                 decoded_file_contents_list.append(chr(reverse_codewords[encoded_file_contents[i:j]]))
                 i = j - 1
                 break
         i += 1
-    print("decoded_file_contents_list is", decoded_file_contents_list)
+    # print("decoded_file_contents_list is", decoded_file_contents_list)
     decoded_file_contents = "".join(decoded_file_contents_list)
     print("decoded_file_contents is", decoded_file_contents)
 
