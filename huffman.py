@@ -147,12 +147,13 @@ def encode(filename):
     freqs = [0] * 256
 
     # Read the file byte by byte
-    with open(filename, "rb") as f:
-        try:
+    try:
+        with open(filename, "rb") as f:
             file_contents = f.read()
-        except IOError:
-            print("Error reading file:", filename)
-            sys.exit(1)
+    except (IOError, FileNotFoundError) as e:
+        print("Error reading file:", filename)
+        print(e)
+        sys.exit(1)
 
     # Loop through every byte of file_contents and count the frequency
     for i in range(len(file_contents)):
@@ -287,12 +288,13 @@ def decode(filename):
     t0 = time()
 
     # Read the file byte by byte
-    with open(filename, "rb") as f:
-        try:
+    try:
+        with open(filename, "rb") as f:
             file_contents = f.read()
-        except IOError:
-            print("Error reading file:", filename)
-            sys.exit(1)
+    except (IOError, FileNotFoundError) as e:
+        print("Error reading file:", filename)
+        print(e)
+        sys.exit(1)
 
     # First byte is the number of padding zeros
     number_padding_zeros = int(file_contents[0])
@@ -304,20 +306,20 @@ def decode(filename):
     # associate them with their lengths in a dictionary
     label_length_dict = defaultdict(int)
     for i in range(number_unique_bytes):
-        bit_length = file_contents[i+2]
-        occurring_byte = file_contents[i+number_unique_bytes+2]
+        bit_length = file_contents[i + 2]
+        occurring_byte = file_contents[i + number_unique_bytes + 2]
         label_length_dict[occurring_byte] = bit_length
 
     # Read the remaining bytes
-    byte_encoded_file_contents = file_contents[2+2*number_unique_bytes:]
+    byte_encoded_file_contents = file_contents[2 + 2 * number_unique_bytes:]
 
     # Convert the remaining bytes (except the last one) to bits
     encoded_file_contents = "".join([int_to_byte_string(byte_encoded_file_contents[i])
-                                     for i in range(len(byte_encoded_file_contents)-1)])
+                                     for i in range(len(byte_encoded_file_contents) - 1)])
 
     # Append the last byte after we have removed the padding zeros
     encoded_file_contents += int_to_byte_string(byte_encoded_file_contents[
-                                                    len(byte_encoded_file_contents)-1])[:8-number_padding_zeros]
+                                                    len(byte_encoded_file_contents) - 1])[:8 - number_padding_zeros]
 
     # Hackily store the length of the byte_label in the label field
     byte_labels = ByteLabels([ByteLabel(byte, "x" * label_length_dict[byte]) for byte in label_length_dict])
@@ -344,36 +346,59 @@ def decode(filename):
     for byte in byte_labels.byte_labels:
         reverse_codewords[byte.label] = byte.byte
 
-    # Convert our long bitstring back into text using our reverse_codewords dictionary
-    decoded_file_contents_list = []
+    # Convert our long bitstring back into a list of bytes using our reverse_codewords dictionary
+    decoded_file_contents_list = bytearray()
     label_max_length = max(map(lambda x: len(x), reverse_codewords.keys()))
 
     i = 0
     while i <= len(encoded_file_contents):
-        for j in range(i+1, i+label_max_length+1):
+        for j in range(i + 1, i + label_max_length + 1):
             if encoded_file_contents[i:j] in reverse_codewords.keys():
-                decoded_file_contents_list.append(chr(reverse_codewords[encoded_file_contents[i:j]]))
+                decoded_file_contents_list.append((reverse_codewords[encoded_file_contents[i:j]]))
                 i = j - 1
                 break
         i += 1
 
-    decoded_file_contents = "".join(decoded_file_contents_list)
+    # Derive new .txt filename
+    output_filename = filename[:filename.rfind(".")] + "_decoded.txt"
+
+    # Write the file byte-by-byte
+    try:
+        with open(output_filename, "wb") as f:
+            f.write(decoded_file_contents_list)
+    except IOError as e:
+        print("Error writing to file:", filename)
+        print(e)
+
+    print("Wrote file contents to", output_filename)
+
     t1 = time()
 
-    print("Process completed in", t1-t0, "seconds.")
+    print("Process completed in", t1 - t0, "seconds.")
 
 
-# Parse initial arguments and react appropriately
-if len(sys.argv) != 3:
-    print("Invalid argument format. Use -e or -d, followed by a filename.")
-    sys.exit(1)
-else:
+def main():
+    # Parse initial arguments and react appropriately
+    if len(sys.argv) != 3:
+        print("Invalid argument format. Use -e or -d, followed by a filename.")
+        sys.exit(1)
+
     mode = sys.argv[1]
     filename = sys.argv[2]
+
     if mode == "-e":
+        if not filename.endswith(".txt"):
+            print("Invalid file type, should have extension .txt")
+            sys.exit(1)
         encode(filename)
     elif mode == "-d":
+        if not filename.endswith(".hc"):
+            print("Invalid file type, should have extension .hc")
         decode(filename)
     else:
         print("Invalid mode, should be -e or -d")
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
