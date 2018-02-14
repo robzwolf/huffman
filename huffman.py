@@ -211,7 +211,7 @@ def encode(filename):
         # Retrieve the current byte_label element
         working_byte_label = byte_labels.byte_labels[i]
 
-        # Increment latest_num by 1
+        # Increment latest_num by 1, as per algorithm
         latest_num += 1
 
         # Left-shift latest_num by the appropriate number of left-shifts
@@ -333,7 +333,7 @@ def decode(filename):
         # Retrieve the current byte_label element
         working_byte_label = byte_labels.byte_labels[i]
 
-        # Increment latest_num by 1
+        # Increment latest_num by 1, as per algorithm
         latest_num += 1
 
         # Left-shift latest_num by the appropriate number of left-shifts
