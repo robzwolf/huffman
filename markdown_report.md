@@ -75,7 +75,7 @@ We then generate new code words, as per the [canonical Huffman algorithm](https:
 
 > Initially, I generated the new code words by using strings and appending `"0"` or `"1"` to the code word, as required. Unfortunately, string concatenation is slow (because strings in Python are immutable) and so I switched to using a number (an `int`) to describe the code word. However, I found that this meant I lost leading zeros, so the code word `000110` would be stored as `110` in memory (decimal value `6`). To get round this issue, I prepended all my code words with a `1` while doing arithmetic (addition, left-shifting) and then stripped away the `1` when finally storing the code word as a string in my code words dictionary.
 
-Once we have a dictionary of bytes and code words, we iterate through the text file's contents and replace each byte with the code word associated with that byte. While some bytes (note that each byte is 8 bits long) were replaced with code words longer than 8 bits, the majority were replaced with code words fewer than 8 bits long, making the encoded text use fewer bits overall.
+Once we have a dictionary of bytes and code words, we iterate through the text file's contents and replace each byte with the code word associated with that byte. While some bytes (note that each byte is 8 bits long) were replaced with code words longer than 8 bits, the majority were replaced with code words fewer than 8 bits long, making the encoded text use fewer bits on average.
 
 > While I originally used string concatenation as follows,
 > ```python
@@ -83,7 +83,7 @@ Once we have a dictionary of bytes and code words, we iterate through the text f
 > for byte in file_contents:
 >     encoded_file_contents += codewords[byte]
 > ```
-> I realised that this was the bottleneck in my program as I had to recreate the `encoded_file_contents` string for every iteration of the loop. This was particularly costly for large text files.
+> I realised that this was the bottleneck in my program as I had to recreate the `encoded_file_contents` string for every iteration of the loop. This was particularly costly for large text files where the number of string concatenations could be in the order of the millions or greater.
 > 
 > Instead, I switched to using list comprehension and the `"".join()` method in Python:
 > ```python
@@ -104,14 +104,14 @@ Thus, our encoded file structure is as follows:
 
 1) Number of padding bits (`1` byte long)
 2) `N` (`1` byte long)
-3) Lengths of each code word (`N` bytes long)
+3) List of lengths of each code word (`N` bytes long)
 4) List of occurring bytes (`N` bytes long)
 5) Encoded file contents (varying length, not necessarily a whole number of bytes)
 6) Padding zeros (between `0` and `7` bits long)
 
 ### Special Cases
 #### Empty File
-If we are encoding an empty file, our code words dictionary will be empty and our byte frequency list will be equivalent to `[0] * 256`. All we write to file is the number of padding zeros (calculated to be `8`), the number of unique bytes `N = 0`) and the padding bits themselves, leaving us with the file:
+If we are encoding an empty file, our code words dictionary will be empty and our byte frequency list will be equivalent to `[0] * 256`. All we write to file is the number of padding zeros (calculated to be `8`), the number of unique bytes `N = 0`, and the padding bits themselves, leaving us with the file:
 
 ```
 00001000 00000000 00000000
@@ -128,7 +128,7 @@ If we are encoding a file of just a single byte, we manually define the code wor
 Although the output file is larger than the input file in both special cases, the output file is in keeping with the canonical Huffman coding structure we defined, and so it makes sense for the program to handle these edge cases in this way.
 
 ## Decoder
-The decoder, somewhat unsurprisingly, does the encoding process in reverse.
+The decoder effectively does the encoding process in reverse.
 
 ### Parsing the Encoded File
 We start by reading a file in as a sequence of bytes and pulling out the values for the number of padding bytes and the number of unique bytes `N`. We then read the next `N` bytes and store them in an ordered dictionary (these are the lengths of our code words), then read the next `N` bytes after that (the list of bytes that correspond to each code word length) and add those to our dictionary.
@@ -181,7 +181,7 @@ If we read that there were `0` unique bytes in the original file (i.e. that `N =
 If we read that `N = 1`, then we manually define the code word `0` to match to the single byte `<byte>` defined in the file. We then read the rest of the file and decode it as normal, using our dictionary `{ 0 : <byte> }`.
 
 # Analysis of Results
-I ran my encoder for several text files of varying sizes. I recorded the compression size and the average compression time, and I computed the compression ratio (calculated as `encoded size / original size`) for each file as well, with the values tabulated below.
+The encoder was run for several text files of varying sizes. The size of the encoded file and the average compression time were recorded, and the compression ratio (calculated as `encoded size / original size`) was computed for each file as well. with the values tabulated below.
 
 | File Size (bytes) 	| Encoded Size (bytes) 	| Compression Ratio (%) 	| Compression Time (s) 	|
 |-------------------	|-------------------------	|-----------------------	|----------------------	|
@@ -194,6 +194,19 @@ I ran my encoder for several text files of varying sizes. I recorded the compres
 | 1,055,021             | 614,807 	                | 58.3 	                    | 0.76849 	            |
 | 2,668,114             | 1,560,590                 | 58.5                  	| 1.95776           	|
 
-We can see how the encoding is fast, taking under two seconds to encode the monumental War and Peace text file. 
+We can see how the encoding is fast, taking under two seconds to encode the monumental _Great Expectations_ (Charles Dickens) text file. 
 
-While the compression ratio varies for smaller files, for larger files it appears to sit between 55–60%.
+While the compression ratio varies for smaller files, for larger files it appears to sit consistently between 55–60%. 
+
+<img src="analysis_graph_1.png" width="80%" />
+
+We see how there is an almost linear relationship between file size and encoding time. This means that a file that is twice as large will, on average, take twice as long to encode.
+
+However, this is not always true. I created a file `lorem_ipsum.txt` of file size `3562` bytes and ran it three times through the encoder; this took an average time of `0.00756` seconds. I then duplicated the contents of this file `4096` times to create a file of size `14,589,952` bytes, and this encoding this took an average of `14.588` seconds. If we were to base the encode time of the large file on the small one, we would expect it to take `0.00756 × 4096 = 30.97 seconds`. In reality, of course, we see how it is much quicker – and the reason for this is that the text itself is repeated many times so we do not use any more code words than in the smaller file, and thus the dictionary lookup is quicker when we encode each byte, in comparison to a larger file with non-repeating text blocks.
+
+We can reasonably assume a direct proportionality between the file size and the encode time, taking the reasoning that a larger text file is likely to use a larger set of bytes, and thus the code words dictionary will be larger (thereby increasing code word lookup time for bytes).
+
+# Limitations and Possible Extra Features
+Could have used Method 1 for dictionary.
+
+_Lots of other things, too._
