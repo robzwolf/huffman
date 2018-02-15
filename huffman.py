@@ -239,7 +239,7 @@ def encode(filename):
 
     # Calculate the necessary number of padding bits (we need to write a
     # multiple of 8 bits to file as we can only write bytes to file)
-    number_padding_bits = 8 - (len(encoded_file_contents) % 8)
+    number_padding_bits = (8 - (len(encoded_file_contents) % 8)) % 8 # Double modulus so that we get 0 instead of 8
     b_number_padding_bits = int_to_byte_string(number_padding_bits)
 
     # Prepare the byte string that describes the number of unique bytes
@@ -305,6 +305,25 @@ def decode(filename):
     # Second byte is the number of occurring bytes
     number_unique_bytes = file_contents[1]
 
+    if number_unique_bytes == 0:
+        # Just create the empty decode file
+
+        # Derive new .txt filename
+        output_filename = filename[:filename.rfind(".")] + "_decoded.txt"
+
+        # Write an empty bytearray to file
+        try:
+            with open(output_filename, "wb") as f:
+                f.write(bytearray())
+        except IOError as e:
+            print("Error writing to file:", filename)
+            print(e)
+
+        print("Decode completed. Wrote file contents to", output_filename)
+        t1 = time()
+        print("Process completed in", round(t1 - t0, 5), "seconds.")
+        sys.exit(0)
+
     reverse_codewords = OrderedDict()
 
     # Count the codeword bit lengths for those number_unique_bytes bytes, read the occurring bytes, and
@@ -325,26 +344,8 @@ def decode(filename):
     # Append the last byte after we have removed the padding zeros
     encoded_file_contents += int_to_byte_string(byte_encoded_file_contents[
                                                     len(byte_encoded_file_contents) - 1])[:8 - number_padding_zeros]
-    if number_unique_bytes == 0:
-        # Just create the empty decode file
 
-        # Derive new .txt filename
-        output_filename = filename[:filename.rfind(".")] + "_decoded.txt"
-
-        # Write an empty bytearray to file
-        try:
-            with open(output_filename, "wb") as f:
-                f.write(bytearray())
-        except IOError as e:
-            print("Error writing to file:", filename)
-            print(e)
-
-        print("Decode completed. Wrote file contents to", output_filename)
-        t1 = time()
-        print("Process completed in", round(t1 - t0, 5), "seconds.")
-        sys.exit(0)
-
-    elif number_unique_bytes == 1:
+    if number_unique_bytes == 1:
         # Hard read fourth byte of the file and assign this to codeword "0"
         occurring_byte = file_contents[3]
         reverse_codewords["0"] = occurring_byte

@@ -10,11 +10,11 @@ I opted to implement canonical Huffman coding as it has a far smaller dictionary
 This program is designed to be run on Python 3.6.3.
 ## Encoder
 To encode a file `some_text.txt`, navigate to the directory containing `huffman.py` and run:
-    
+
 ```bash
 $ python3 huffman.py -e some_text.txt
 ```
-    
+
 This will encode `some_text.txt` and write the output to `some_text.hc`.
 
 ## Decoder
@@ -23,7 +23,7 @@ To decode a file `some_text.hc`, navigate to the directory containing `huffman.p
 ```bash
 $ python3 huffman.py -d some_text.hc
 ```
-    
+
 This will decode `some_text.hc` and write the output to `some_text_decoded.txt`.
 
 # Implementation
@@ -34,7 +34,7 @@ The program starts by reading a plain text file as a sequence of bytes. It count
 For example, the ASCII text file
 
 ```
-Hello 
+Hello
 ```
 
 is represented, in bits, as
@@ -84,7 +84,7 @@ Once we have a dictionary of bytes and code words, we iterate through the text f
 >     encoded_file_contents += codewords[byte]
 > ```
 > I realised that this was the bottleneck in my program as I had to recreate the `encoded_file_contents` string for every iteration of the loop. This was particularly costly for large text files where the number of string concatenations could be in the order of the millions or greater.
-> 
+>
 > Instead, I switched to using list comprehension and the `"".join()` method in Python:
 > ```python
 > encoded_file_contents = "".join([codewords[byte] for byte in file_contents])
@@ -96,7 +96,7 @@ Once our file contents are encoded, it is a simple matter of deciding on a dicti
 
 A neat characteristic of the canonical Huffman coding algorithm is that we only need to store the _lengths_ of the code words (and the set of bytes we encoded) rather than the code words themselves. This vastly decreases the output file size as we can store each length in a single byte (no code word will ever be longer than 256 bits long) as opposed to having to store both the code word and the length of the code word in the file dictionary. This method is also far easier to write a decoder for, as we can simply read the file byte-by-byte and reconstruct the dictionary without too much difficulty.
 
-We need to also store the number of unique bytes that appeared in the original text (let us call this `N`), so that we know how long our dictionary is when we read the file for decoding. 
+We need to also store the number of unique bytes that appeared in the original text (let us call this `N`), so that we know how long our dictionary is when we read the file for decoding.
 
 Note additionally that, due to constraints imposed by the operating system, we must write a multiple of 8 bits to disk (i.e. a whole number of bytes). Because we cannot guarantee that our encoded file contents will be a multiple of 8 bits long, we need to append some padding zeros to the end of the file and therefore we also need to store the number of padding zeros in the file.
 
@@ -149,22 +149,22 @@ We can illustrate this with the simple dictionary `{ 0 : a, 10 : b, 11 : c }` an
    i j
    0 => a
    decoded = a
-   
+
 2) 0|1|011
     i j
    1 => no match
    decoded = a
-   
+
 3) 0|10|11
     i  j
    10 => b
    decoded = ab
-   
+
 4) 010|1|1
       i j
    1 => no match
    decoded = ab
-   
+
 5) 010|11|
       i  j
    11 => c
@@ -176,7 +176,7 @@ The double-counter search is a fast and efficient way of iterating through the e
 ### Special Cases
 #### Empty File
 If we read that there were `0` unique bytes in the original file (i.e. that `N = 0`), then we know the original file was completely empty and so we just write an empty file to disc.
-    
+
 #### Single-Byte File
 If we read that `N = 1`, then we manually define the code word `0` to match to the single byte `<byte>` defined in the file. We then read the rest of the file and decode it as normal, using our dictionary `{ 0 : <byte> }`.
 
@@ -194,9 +194,9 @@ The encoder was run for several text files of varying sizes. The size of the enc
 | 1,055,021             | 614,807 	                | 58.3 	                    | 0.76849 	            |
 | 2,668,114             | 1,560,590                 | 58.5                  	| 1.95776           	|
 
-We can see how the encoding is fast, taking under two seconds to encode the monumental _Great Expectations_ (Charles Dickens) text file. 
+We can see how the encoding is fast, taking under two seconds to encode the monumental _Great Expectations_ (Charles Dickens) text file.
 
-While the compression ratio varies for smaller files, for larger files it appears to sit consistently between 55–60%. 
+While the compression ratio varies for smaller files, for larger files it appears to sit consistently between 55–60%.
 
 <img src="analysis_graph_1.png" width="80%" />
 
@@ -207,6 +207,12 @@ However, this is not always true. I created a file `lorem_ipsum.txt` of file siz
 We can reasonably assume a direct proportionality between the file size and the encode time, taking the reasoning that a larger text file is likely to use a larger set of bytes, and thus the code words dictionary will be larger (thereby increasing code word lookup time for bytes).
 
 # Limitations and Possible Extra Features
-Could have used Method 1 for dictionary.
+### Dictionary
+There are two distinct methods that can be used to store a canonical Huffman code dictionary in a file. In our case, we stored both the lengths of the code words and the bytes that were used. This means the size of our dictionary is twice the number of uniquely occurring bytes (i.e. it is `2N`).
 
-_Lots of other things, too._
+However, if `N > 128` (i.e. the file uses a wide range of different characters), then it would be more space efficient to store a fixed dictionary of length `256` bytes, where the length of the code word for every single possible byte (i.e. bytes in the range `00000000` to `11111111`) is stored, with non-occurring bytes having code word length `0`. This would also save having to store `N` in the file as we would consider it to be 256.
+
+This would probably be more prevalent in text files with lots of non-ASCII characters. _War and Peace_ only uses `90` unique bytes, but a file with lots of non-English characters could well use more than this due to the way UTF-8 encoding works.
+
+### Faster Code Word Construction
+If you observe carefully, you will see that we do not actually need to know the original code words before we construct the canonical code words. We only need to know their lengths, so we could probably optimise our program a little by only counting the depth of each leaf node rather than assigning a code word to it when we traverse the tree. We could then compare the canonically generated code word's length against the depth of that leaf (which would be equivalent to the length of the code word stored with that leaf) rather than calculating the length of the original code word associated with that leaf.
