@@ -181,9 +181,9 @@ If we read that there were `0` unique bytes in the original file (i.e. that `N =
 If we read that `N = 1`, then we manually define the code word `0` to match to the single byte `<byte>` defined in the file. We then read the rest of the file and decode it as normal, using our dictionary `{ 0 : <byte> }`.
 
 # Analysis of Results
-Text
+I ran my encoder for several text files of varying sizes. I recorded the compression size and the average compression time, and I computed the compression ratio (calculated as `encoded size / original size`) for each file as well, with the values tabulated below.
 
-| File Size (bytes) 	| Compressed Size (bytes) 	| Compression Ratio (%) 	| Compression Time (s) 	|
+| File Size (bytes) 	| Encoded Size (bytes) 	| Compression Ratio (%) 	| Compression Time (s) 	|
 |-------------------	|-------------------------	|-----------------------	|----------------------	|
 | 716 	                | 451 	                    | 63.0                  	| 0.00423 	            |
 | 5,150 	            | 2,904 	                | 55.3 	                    | 0.00739           	|
@@ -194,4 +194,6 @@ Text
 | 1,055,021             | 614,807 	                | 58.3 	                    | 0.76849 	            |
 | 2,668,114             | 1,560,590                 | 58.5                  	| 1.95776           	|
 
-Text
+We can see how the encoding is fast, taking under two seconds to encode the monumental War and Peace text file. 
+
+While the compression ratio varies for smaller files, for larger files it appears to sit between 55–60%.
