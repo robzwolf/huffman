@@ -94,7 +94,7 @@ Once we have a dictionary of bytes and code words, we iterate through the text f
 ### Output File Structure
 Once our file contents are encoded, it is a simple matter of deciding on a dictionary structure (to store with the output file) and writing everything to an output file.
 
-A neat characteristic of the canonical Huffman coding algorithm is that we only need to store the _lengths_ of the code words (and the set of bytes we encoded) rather than the code words themselves. This vastly decreases the output file size as we can store each length in a single byte (no code word will ever be longer than 256 bits long) as opposed to having to store both the code word and the length of the code word in the file dictionary. This method is also far easier to write a decoder for, as we can simply read the file byte-by-byte and reconstruct the dictionary without too much difficulty.
+A neat characteristic of the canonical Huffman coding algorithm is that we only need to store the _lengths_ of the code words (and the set of bytes we encoded) rather than the code words themselves. This vastly decreases the output file size as we can store each length in a single byte (no code word will ever be longer than `256` bits long) as opposed to having to store both the code word and the length of the code word in the file dictionary. This method is also far easier to write a decoder for, as we can simply read the file byte-by-byte and reconstruct the dictionary without too much difficulty.
 
 We need to also store the number of unique bytes that appeared in the original text (let us call this `N`), so that we know how long our dictionary is when we read the file for decoding.
 
@@ -111,10 +111,10 @@ Thus, our encoded file structure is as follows:
 
 ### Special Cases
 #### Empty File
-If we are encoding an empty file, our code words dictionary will be empty and our byte frequency list will be equivalent to `[0] * 256`. All we write to file is the number of padding zeros (calculated to be `8`), the number of unique bytes `N = 0`, and the padding bits themselves, leaving us with the file:
+If we are encoding an empty file, our code words dictionary will be empty and our byte frequency list will be equivalent to `[0] * 256`. All we write to file is the number of padding zeros (calculated to be `0`), the number of unique bytes `N = 0`, and the padding bits themselves (of which there are none), leaving us with the file:
 
 ```
-00001000 00000000 00000000
+00000000 00000000
 ````
 
 #### Single-Byte File
@@ -202,17 +202,27 @@ While the compression ratio varies for smaller files, for larger files it appear
 
 We see how there is an almost linear relationship between file size and encoding time. This means that a file that is twice as large will, on average, take twice as long to encode.
 
-However, this is not always true. I created a file `lorem_ipsum.txt` of file size `3562` bytes and ran it three times through the encoder; this took an average time of `0.00756` seconds. I then duplicated the contents of this file `4096` times to create a file of size `14,589,952` bytes, and this encoding this took an average of `14.588` seconds. If we were to base the encode time of the large file on the small one, we would expect it to take `0.00756 × 4096 = 30.97 seconds`. In reality, of course, we see how it is much quicker – and the reason for this is that the text itself is repeated many times so we do not use any more code words than in the smaller file, and thus the dictionary lookup is quicker when we encode each byte, in comparison to a larger file with non-repeating text blocks.
+However, this is not always true. I created a file `lorem_ipsum.txt` of file size `3562` bytes and ran it three times through the encoder; this took an average time of `0.00756` seconds. I then duplicated the contents of this file `4096` times to create a file of size `14,589,952` bytes, and encoding this took an average of `14.588` seconds. If we were to base the encode time of the large file on the small one, we would expect it to take `0.00756 × 4096 = 30.97 seconds`. In reality, of course, we see how it is much quicker – and the reason for this is that the text itself is repeated many times so we do not use any more code words than in the smaller file, and thus the dictionary lookup is quicker when we encode each byte, in comparison to a larger file with non-repeating text blocks.
 
 We can reasonably assume a direct proportionality between the file size and the encode time, taking the reasoning that a larger text file is likely to use a larger set of bytes, and thus the code words dictionary will be larger (thereby increasing code word lookup time for bytes).
 
 # Limitations and Possible Extra Features
 ### Dictionary
-There are two distinct methods that can be used to store a canonical Huffman code dictionary in a file. In our case, we stored both the lengths of the code words and the bytes that were used. This means the size of our dictionary is twice the number of uniquely occurring bytes (i.e. it is `2N`).
+There are two distinct methods that can be used to store a canonical Huffman code dictionary in a file. In our case, we stored the lengths of the code words, the bytes that were used and the number of bytes that were used (`N`). This means the size of our dictionary is `2N+1`.
 
-However, if `N > 128` (i.e. the file uses a wide range of different characters), then it would be more space efficient to store a fixed dictionary of length `256` bytes, where the length of the code word for every single possible byte (i.e. bytes in the range `00000000` to `11111111`) is stored, with non-occurring bytes having code word length `0`. This would also save having to store `N` in the file as we would consider it to be 256.
+However, if `N > 128` (i.e. the file uses a wide range of different characters), then it would be more space efficient to store a fixed dictionary of length `256` bytes, where the length of the code word for every single possible byte (i.e. bytes in the range `00000000` to `11111111`) is stored, with non-occurring bytes having code word length `0`. This would also save having to store `N` in the file as we would consider it to be 256. Of course, this would be very space inefficient for small text files – if we have a file that only uses `4` unique bytes, then we'd be storing a dictionary of size `256` instead of one of size `2 × 4 + 1 = 9`!
 
 This would probably be more prevalent in text files with lots of non-ASCII characters. _War and Peace_ only uses `90` unique bytes, but a file with lots of non-English characters could well use more than this due to the way UTF-8 encoding works.
 
 ### Faster Code Word Construction
-If you observe carefully, you will see that we do not actually need to know the original code words before we construct the canonical code words. We only need to know their lengths, so we could probably optimise our program a little by only counting the depth of each leaf node rather than assigning a code word to it when we traverse the tree. We could then compare the canonically generated code word's length against the depth of that leaf (which would be equivalent to the length of the code word stored with that leaf) rather than calculating the length of the original code word associated with that leaf.
+If we observe carefully, we see that we do not actually need to know the original code words before we construct the canonical code words. In fact, we only need to know their lengths, so we could probably optimise our program a little by only counting the depth of each leaf node rather than assigning a code word to it when we traverse the tree.
+
+We could then compare the canonically generated code word's length against the depth of that leaf (which would be equivalent to the length of the code word stored with that leaf) rather than calculating the length of the original code word associated with that leaf.
+
+### Padding Zeros
+We store anywhere between `0` and `7` padding zeros. The number `7` can be described in binary as `111`, which is just `3` bits long. However, we use a whole byte (`8` bits) to describe the length of the padding zeros.
+
+If we were a little smarter about it, we could just store `3` bits to describe the number of padding bits and plan around this appropriately, but we would probably have to adjust the number of padding bits to reflect this. However, if space is a real concern, this could save one byte in some cases.
+
+### Max Code Word Length
+While not really a limitation, it is worth noting that the maximum length of a code word that can be stored is `256` (the maximum value that can be held by a single byte). However, it turns out that the longest a code word can ever be is `256` bits (if that leaf is at maximal depth `256` in the tree), so this is not a concern.

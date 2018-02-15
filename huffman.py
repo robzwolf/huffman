@@ -309,7 +309,7 @@ def decode(filename):
         # Just create the empty decode file
 
         # Derive new .txt filename
-        output_filename = filename[:filename.rfind(".")] + "_decoded.txt"
+        output_filename = filename[:filename.rfind(".")] + ".txt"
 
         # Write an empty bytearray to file
         try:

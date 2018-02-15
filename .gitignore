@@ -3,3 +3,5 @@ venv/
 venv1/
 mcclowes*
 ~$analysis.xlsx
+grip_md_export.sh
+grip_md.sh
