@@ -391,7 +391,7 @@ def decode(filename):
         i += 1
 
     # Derive new .txt filename
-    output_filename = filename[:filename.rfind(".")] + "_decoded.txt"
+    output_filename = filename[:filename.rfind(".")] + ".txt"
 
     # Write the file byte-by-byte
     try:
