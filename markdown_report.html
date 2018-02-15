@@ -60,7 +60,7 @@
           <div class="repository-content">
             <div id="readme" class="readme boxed-group clearfix announce instapaper_body md">
 
-                <h3 style="font-size:40px;line-height:40px;padding:15px 10px">
+                <h3 style="font-size:36px;line-height:40px;padding:15px 10px">
                   <span class="octicon octicon-book"></span>
                   Huffman Coding Assignment
                 </h3>
@@ -70,6 +70,11 @@
 <!-- <a id="user-content-huffman-coding-assignment" class="anchor" href="#huffman-coding-assignment" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Huffman Coding Assignment</h1> -->
 <h6>
 <a id="user-content-vzbf32--z0973057--feb-2018" class="anchor" href="#vzbf32--z0973057--feb-2018" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>vzbf32 | Z0973057 | Feb 2018</h6>
+<style type="text/css">
+.markdown-body h1 {
+  font-size:1.8em;
+}
+</style>
 <h1>
 <a id="user-content-introduction" class="anchor" href="#introduction" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Introduction</h1>
 <p>Huffman coding relies on assigning code words to characters, with the length of the code word being roughly proportional to the frequency of the character in the encoding text. Each character is then replaced with a code word, and then the code word dictionary and the encoded text is written to a new file, which will have a smaller file size (on average).</p>
@@ -104,24 +109,22 @@
 <pre><code>72 101 108 108 111
 </code></pre>
 <p>This gives us the frequencies:</p>
-<p>&nbsp;</p>
+<!-- <p>&nbsp;</p> -->
 <table>
-<thead>
-<tr>
-<th>byte</th>
-<th>...</th>
-<th>72</th>
-<th>...</th>
-<th>101</th>
-<th>...</th>
-<th>108</th>
-<th>...</th>
-<th>111</th>
-<th>...</th>
-</tr>
-</thead>
 <tbody>
-<tr>
+<tr style="background-color:#f6f8fa">
+<th>byte</th>
+<td>...</td>
+<td>72</td>
+<td>...</td>
+<td>101</td>
+<td>...</td>
+<td>108</td>
+<td>...</td>
+<td>111</td>
+<td>...</td>
+</tr>
+<tr style="background-color:#fff">
 <td><strong>frequency</strong></td>
 <td>0</td>
 <td>1</td>
@@ -204,12 +207,12 @@
 <p>Again, we use the 'leading <code>1</code>' trick to allow us to store the code word as an <code>int</code> and to keep track of leading zeros. We then discard the leading <code>1</code> once we eventually convert the final code word to a string for storing in our reverse code words dictionary.</p>
 </blockquote>
 <p>We need to use a reverse code words dictionary instead of just a normal dictionary – by which we mean that the code word itself is the key and the byte it is associated with is the value, as opposed to the other way around. This is a requirement as we will be reading code words in from the encoded file and we need to look up which byte associates with which code word.</p>
-<p>&nbsp;</p>
+<!-- <p>&nbsp;</p> -->
 <h3>
 <a id="user-content-double-counter-search" class="anchor" href="#double-counter-search" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Double-Counter Search</h3>
 <p>The decoding algorithm uses what we shall call a <em>double-counter search</em>. We have two counters <code>i</code> and <code>j</code>, where <code>i</code> is at the start of each codeword and <code>j</code> iterates through every bit after <code>i</code>. If the bit string between <code>i</code> and <code>j</code> is in the code word dictionary's keys, then we know the given bit string is a code word. We look up the byte associated with this and add this to our output bytes, move the counter <code>i</code> to <code>j-1</code> (i.e. to the start of the next code word) and then set <code>j</code> to <code>i+1</code>, so that <code>j</code> is now one bit ahead of <code>i</code>.</p>
 <p>We can illustrate this with the simple dictionary <code>{ 0 : a, 10 : b, 11 : c }</code> and the encoded string <code>01011</code> as follows.</p>
-<pre><code>1) |0|1011
+<!-- <pre><code>1) |0|1011
    i j
    0 =&gt; a
    decoded = a
@@ -233,7 +236,11 @@
       i  j
    11 =&gt; c
    decoded = abc
-</code></pre>
+</code></pre> -->
+<pre><code><span style="color: #9aadca;">1)</span> |0|1011       <span style="color: #9aadca;">2)</span> 0|1|011       <span style="color: #9aadca;">3)</span> 0|10|11       <span style="color: #9aadca;">4)</span> 010|1|1       <span style="color: #9aadca;">5)</span> 010|11|
+   i j               i j              i  j               i j              i  j
+   0 =&gt; a           1 =&gt; no match    10 =&gt; b          1 =&gt; no match    11 =&gt; c
+   decoded = a      decoded = a      decoded = ab     decoded = ab     decoded = abc </code></pre>
 <p>The double-counter search is a fast and efficient way of iterating through the encoded text and rebuilding the original cleartext.</p>
 <h3>
 <a id="user-content-special-cases-1" class="anchor" href="#special-cases-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Special Cases</h3>
@@ -245,14 +252,21 @@
 <p>If we read that <code>N = 1</code>, then we manually define the code word <code>0</code> to match to the single byte <code>&lt;byte&gt;</code> defined in the file. We then read the rest of the file and decode it as normal, using our dictionary <code>{ 0 : &lt;byte&gt; }</code>.</p>
 <h1>
 <a id="user-content-analysis-of-results" class="anchor" href="#analysis-of-results" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Analysis of Results</h1>
-<p>The encoder was run for several text files of varying sizes. The size of the encoded file and the average compression time were recorded, and the compression ratio (calculated as <code>encoded size / original size</code>) was computed for each file as well. with the values tabulated below.</p>
+<p>The encoder was run for several text files of varying sizes. The size of the encoded file and the average encoding and decoding times were recorded, and the compression ratio (calculated as <code>encoded size / original size</code>) was computed for each file as well, with the values tabulated below.</p>
+<style type="text/css">
+.markdown-body th, .markdown-body td {
+  padding:2px 9px!important;
+  font-size:14px;
+}
+</style>
 <table>
 <thead>
 <tr>
-<th>File Size (bytes)</th>
+<th>Original File Size (bytes)</th>
 <th>Encoded Size (bytes)</th>
 <th>Compression Ratio (%)</th>
-<th>Compression Time (s)</th>
+<th>Encoding Time (s)</th>
+<th>Decoding Time (s)</th>
 </tr>
 </thead>
 <tbody>
@@ -260,59 +274,74 @@
 <td>716</td>
 <td>451</td>
 <td>63.0</td>
-<td>0.00423</td>
+<td>0.00556</td>
+<td>0.01003</td>
 </tr>
 <tr>
 <td>5,150</td>
 <td>2,904</td>
 <td>55.3</td>
-<td>0.00739</td>
+<td>0.01052</td>
+<td>0.05346</td>
 </tr>
 <tr>
 <td>57,024</td>
 <td>35,132</td>
 <td>61.6</td>
-<td>0.04820</td>
+<td>0.03424</td>
+<td>0.58449</td>
 </tr>
 <tr>
 <td>61,824</td>
 <td>33,235</td>
 <td>53.8</td>
-<td>0.05038</td>
+<td>0.06749</td>
+<td>0.53111</td>
 </tr>
 <tr>
 <td>462,070</td>
 <td>264,179</td>
 <td>57.2</td>
-<td>0.32449</td>
+<td>0.23819</td>
+<td>3.35852</td>
 </tr>
 <tr>
 <td>927,207</td>
 <td>518,531</td>
 <td>55.9</td>
-<td>0.70047</td>
+<td>0.51472</td>
+<td>5.80815</td>
 </tr>
 <tr>
 <td>1,055,021</td>
 <td>614,807</td>
 <td>58.3</td>
-<td>0.76849</td>
+<td>0.54151</td>
+<td>6.59541</td>
 </tr>
 <tr>
 <td>2,668,114</td>
 <td>1,560,590</td>
 <td>58.5</td>
-<td>1.95776</td>
+<td>1.40724</td>
+<td>15.97237</td>
 </tr>
 </tbody>
 </table>
+<h2><a id="user-content-analysis-encoder" class="anchor" href="#analysis-encoder" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Encoder</h2>
 <p>We can see how the encoding is fast, taking under two seconds to encode the monumental <em>Great Expectations</em> (Charles Dickens) text file.</p>
 <p>While the compression ratio varies for smaller files, for larger files it appears to sit consistently between 55–60%.</p>
-<!-- <p style="text-align:center"><a href="analysis_graph_1.png" target="_blank"><img src="analysis_graph_1.png" style="max-width:40%;"></a></p> -->
-<p style="text-align:center"><img src="analysis_graph_1.png" style="max-width:40%;"></p>
+<p style="text-align:center"><img src="analysis_graph_encoding.png" style="max-width:40%;"></p>
 <p>We see how there is an almost linear relationship between file size and encoding time. This means that a file that is twice as large will, on average, take twice as long to encode.</p>
 <p>However, this is not always true. I created a file <code>lorem_ipsum.txt</code> of file size <code>3562</code> bytes and ran it three times through the encoder; this took an average time of <code>0.00756</code> seconds. I then duplicated the contents of this file <code>4096</code> times to create a file of size <code>14,589,952</code> bytes, and encoding this took an average of <code>14.588</code> seconds. If we were to base the encode time of the large file on the small one, we would expect it to take <code>0.00756 × 4096 = 30.97 seconds</code>. In reality, of course, we see how it is much quicker – and the reason for this is that the text itself is repeated many times so we do not use any more code words than in the smaller file, and thus the dictionary lookup is quicker when we encode each byte, in comparison to a larger file with non-repeating text blocks.</p>
 <p>We can reasonably assume a direct proportionality between the file size and the encode time, taking the reasoning that a larger text file is likely to use a larger set of bytes, and thus the code words dictionary will be larger (thereby increasing code word lookup time for bytes).</p>
+
+<h2><a id="user-content-analysis-decoder" class="anchor" href="#analysis-decoder" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Decoder</h2>
+<p>In contrast, the decoder is far slower than the encoder. This is because, after constructing the reverse code words dictionary, it has to search through the dictionary for every single bit in the encoded file. This is slow, and is the bottleneck in this process.</p>
+<p style="text-align:center"><img src="analysis_graph_decoding.png" style="max-width:40%;"></p>
+<p>Again, there is an almost linear relationship between original file size and decoding time. This makes sense for the same reasons as described above – a larger original file is likely to use a greater set of bytes, so the verse code words dictionary will be bigger and it takes longer to search through this.</p>
+<p>While the decoding time varies according to the encoding time with no real correlation for small file sizes, for large files the ratio <code>decode time / encode time</code> tends to lie between <code>10</code> and <code>15</code> times as long.</p>
+
 <h1>
 <a id="user-content-limitations-and-possible-extra-features" class="anchor" href="#limitations-and-possible-extra-features" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Limitations and Possible Extra Features</h1>
 <h3>
